@@ -1,7 +1,7 @@
-export default function biosimPlugin(options) {
+export default function installBiosimPlugin(options) {
     // Set default base URL for BioSim API endpoints.
     // You can override this by passing an options.baseUrl.
-    const defaultBaseUrl = (options && options.baseUrl) ? options.baseUrl : 'http://localhost:8080';
+    const defaultBaseUrl = (options && options.baseUrl) ? options.baseUrl : 'http://localhost:8009';
 
     // Utility function for fetching JSON data with error handling.
     async function fetchJSON(url) {
@@ -14,46 +14,40 @@ export default function biosimPlugin(options) {
 
     return function install(openmct) {
         // Register the object types.
-        openmct.objects.addType({
-            key: 'biosim.simulation.root',
+        openmct.types.addType('biosim.simulation.root', {
             name: 'BioSim Simulation Root',
             description: 'Container for BioSim simulation instances.',
             cssClass: 'icon-folder'
         });
 
-        openmct.objects.addType({
-            key: 'biosim.simulation',
+        openmct.types.addType( 'biosim.simulation', {
             name: 'BioSim Simulation Instance',
             description: 'A simulation instance from BioSim',
             cssClass: 'icon-simulation'
         });
 
-        openmct.objects.addType({
-            key: 'biosim.sim.modules',
+        openmct.types.addType('biosim.sim.modules', {
             name: 'SimModules',
             description: 'Modules used in the simulation',
-            cssClass: 'icon-components'
+            cssClass: 'icon-dictionary'
         });
 
-        openmct.objects.addType({
-            key: 'biosim.sim.sensors',
+        openmct.types.addType('biosim.sim.sensors', {
             name: 'Sensors',
             description: 'Sensors used in the simulation',
-            cssClass: 'icon-sensor'
+            cssClass: 'icon-telemetry'
         });
 
-        openmct.objects.addType({
-            key: 'biosim.sim.actuators',
+        openmct.types.addType('biosim.sim.actuators', {
             name: 'Actuators',
             description: 'Actuators used in the simulation',
-            cssClass: 'icon-actuator'
+            cssClass: 'icon-telemetry'
         });
 
-        openmct.objects.addType({
-            key: 'biosim.sim.globals',
+        openmct.types.addType('biosim.sim.globals', {
             name: 'Globals',
             description: 'Global simulation settings from BioSim',
-            cssClass: 'icon-gear'
+            cssClass: 'icon-telemetry'
         });
 
         // Register a provider to fetch BioSim simulation data.

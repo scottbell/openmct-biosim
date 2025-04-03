@@ -4,25 +4,27 @@
     "description": "An Open MCT plugin that connects to BioSim and provides simulation objects.",
     "main": "dist/index.js",
     "scripts": {
-      "clean": "rm -rf ./dist ./node_modules",
-      "build": "webpack --mode production",
-      "build:example": "npm install nasa/openmct#master --no-save",
-      "start": "webpack serve --mode development"
+        "clean": "rm -rf ./dist ./node_modules",
+        "build": "webpack --mode production",
+        "build:example": "npm install nasa/openmct#master --no-save",
+        "start": "webpack serve --mode development"
     },
     "keywords": [
-      "openmct",
-      "biosim",
-      "simulation"
+        "openmct",
+        "biosim",
+        "simulation"
     ],
     "author": "Scott Bell",
     "license": "GPVL-3.0",
-    "dependencies": {},
     "devDependencies": {
-      "webpack": "^5.9.8",
-      "webpack-cli": "^6.0.1",
-      "webpack-dev-server": "^5.2.1",
-      "babel-loader": "^10.0.0",
-      "@babel/core": "^7.26.10",
-      "@babel/preset-env": "^7.26.9"
+        "@babel/core": "^7.26.10",
+        "@babel/eslint-parser": "^7.27.0",
+        "@babel/preset-env": "^7.26.9",
+        "babel-loader": "^10.0.0",
+        "eslint": "^9.23.0",
+        "source-map-loader": "^5.0.0",
+        "webpack": "^5.9.8",
+        "webpack-cli": "^6.0.1",
+        "webpack-dev-server": "^5.2.1"
     }
-  }
+}
