@@ -20,7 +20,7 @@ export default function installBiosimPlugin(options) {
             cssClass: 'icon-folder'
         });
 
-        openmct.types.addType( 'biosim.simulation', {
+        openmct.types.addType('biosim.simulation', {
             name: 'BioSim Simulation Instance',
             description: 'A simulation instance from BioSim',
             cssClass: 'icon-simulation'
@@ -63,7 +63,7 @@ export default function installBiosimPlugin(options) {
                         location: 'ROOT',
                         composition: simulationsData.simulations.map(simId => ({
                             key: 'biosim.simulation',
-                            namespace: simId.toString(),
+                            namespace: 'biosim',
                             id: simId.toString()
                         }))
                     };
@@ -71,7 +71,7 @@ export default function installBiosimPlugin(options) {
 
                 // A simulation instance: get detailed configuration.
                 if (identifier.key === 'biosim.simulation') {
-                    const simId = identifier.namespace;
+                    const simId = identifier.id; // use id as the simulation identifier
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     return {
                         identifier,
@@ -79,10 +79,10 @@ export default function installBiosimPlugin(options) {
                         type: 'biosim.simulation',
                         location: 'biosim.simulation.root',
                         composition: [
-                            { key: 'biosim.sim.modules', namespace: simId, id: 'modules' },
-                            { key: 'biosim.sim.sensors', namespace: simId, id: 'sensors' },
-                            { key: 'biosim.sim.actuators', namespace: simId, id: 'actuators' },
-                            { key: 'biosim.sim.globals', namespace: simId, id: 'globals' }
+                            { key: 'biosim.sim.modules', namespace: 'biosim', id: `${simId}:modules` },
+                            { key: 'biosim.sim.sensors', namespace: 'biosim', id: `${simId}:sensors` },
+                            { key: 'biosim.sim.actuators', namespace: 'biosim', id: `${simId}:actuators` },
+                            { key: 'biosim.sim.globals', namespace: 'biosim', id: `${simId}:globals` }
                         ],
                         detail: detail
                     };
@@ -90,12 +90,13 @@ export default function installBiosimPlugin(options) {
 
                 // SimModules category: list all keys from the 'modules' section.
                 if (identifier.key === 'biosim.sim.modules') {
-                    const simId = identifier.namespace;
+                    // identifier.id is in the form "simId:modules"
+                    const [simId] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     const modules = Object.keys(detail.modules || {}).map(moduleName => ({
                         key: 'biosim.module',
-                        namespace: simId,
-                        id: moduleName
+                        namespace: 'biosim',
+                        id: `${simId}:${moduleName}`
                     }));
                     return {
                         identifier,
@@ -107,14 +108,15 @@ export default function installBiosimPlugin(options) {
 
                 // Sensors category: filter modules that include a 'sensor' property.
                 if (identifier.key === 'biosim.sim.sensors') {
-                    const simId = identifier.namespace;
+                    // identifier.id is in the form "simId:sensors"
+                    const [simId] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     const sensors = Object.entries(detail.modules || {})
                         .filter(([name, mod]) => mod.sensor)
-                        .map(([name]) => ({
+                        .map(([moduleName]) => ({
                             key: 'biosim.sensor',
-                            namespace: simId,
-                            id: name
+                            namespace: 'biosim',
+                            id: `${simId}:${moduleName}`
                         }));
                     return {
                         identifier,
@@ -126,14 +128,15 @@ export default function installBiosimPlugin(options) {
 
                 // Actuators category: filter modules that include an 'actuator' property.
                 if (identifier.key === 'biosim.sim.actuators') {
-                    const simId = identifier.namespace;
+                    // identifier.id is in the form "simId:actuators"
+                    const [simId] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     const actuators = Object.entries(detail.modules || {})
                         .filter(([name, mod]) => mod.actuator)
-                        .map(([name]) => ({
+                        .map(([moduleName]) => ({
                             key: 'biosim.actuator',
-                            namespace: simId,
-                            id: name
+                            namespace: 'biosim',
+                            id: `${simId}:${moduleName}`
                         }));
                     return {
                         identifier,
@@ -145,7 +148,8 @@ export default function installBiosimPlugin(options) {
 
                 // Globals category: directly return the globals.
                 if (identifier.key === 'biosim.sim.globals') {
-                    const simId = identifier.namespace;
+                    // identifier.id is in the form "simId:globals"
+                    const [simId] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     return {
                         identifier,
@@ -158,8 +162,7 @@ export default function installBiosimPlugin(options) {
 
                 // Individual module details.
                 if (identifier.key === 'biosim.module') {
-                    const simId = identifier.namespace;
-                    const moduleName = identifier.id;
+                    const [simId, moduleName] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     return {
                         identifier,
@@ -172,8 +175,7 @@ export default function installBiosimPlugin(options) {
 
                 // Individual sensor details.
                 if (identifier.key === 'biosim.sensor') {
-                    const simId = identifier.namespace;
-                    const sensorName = identifier.id;
+                    const [simId, sensorName] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     return {
                         identifier,
@@ -186,8 +188,7 @@ export default function installBiosimPlugin(options) {
 
                 // Individual actuator details.
                 if (identifier.key === 'biosim.actuator') {
-                    const simId = identifier.namespace;
-                    const actuatorName = identifier.id;
+                    const [simId, actuatorName] = identifier.id.split(':');
                     const detail = await fetchJSON(`${defaultBaseUrl}/api/simulation/${simId}`);
                     return {
                         identifier,
