@@ -1,4 +1,5 @@
-import { NAMESPACE_KEY, OBJECT_TYPES, ROOT_KEY } from "./const";
+import { NAMESPACE_KEY, OBJECT_TYPES, ROOT_KEY } from "../const";
+import { encodeKey } from "../utils/keyUtils";
 
 // BioSimObjectProvider.js
 // This provider is responsible for fetching and returning BioSim objects for Open MCT.
@@ -20,16 +21,6 @@ export default class BioSimObjectProvider {
       throw new Error(`Error fetching ${url}: ${response.statusText}`);
     }
     return response.json();
-  }
-
-  #encodeKey(simId, type, name) {
-    // Check if any parameters are missing and throw an error if so.
-    if (!simId || !type || !name) {
-      throw new Error(
-        `🛑 Missing parameters for encoding key for simID: ${simId}, type:${type}, name: ${name}`,
-      );
-    }
-    return `${simId}:${type}:${name}`;
   }
 
   async get(identifier) {
@@ -64,7 +55,7 @@ export default class BioSimObjectProvider {
       simIDs.map(async (simID) => {
         const simulationInstanceDetails = await this.#fetchJSON(simID);
         // make the sim instance
-        const instanceKey = this.#encodeKey(
+        const instanceKey = encodeKey(
           simID,
           OBJECT_TYPES.SIMULATION,
           "instance",
@@ -84,7 +75,7 @@ export default class BioSimObjectProvider {
         );
         this.#addObject(newSimulationInstanceObject);
 
-        const modulesKey = this.#encodeKey(
+        const modulesKey = encodeKey(
           simID,
           OBJECT_TYPES.SIM_MODULES,
           "modules",
@@ -110,7 +101,7 @@ export default class BioSimObjectProvider {
         // iterate through modules of details adding objects
         moduleNames.forEach((moduleName) => {
           const module = simulationInstanceDetails.modules[moduleName];
-          const moduleKey = this.#encodeKey(
+          const moduleKey = encodeKey(
             simID,
             OBJECT_TYPES.SIM_MODULE,
             module.moduleName,
@@ -122,6 +113,27 @@ export default class BioSimObjectProvider {
             },
             type: OBJECT_TYPES.SIM_MODULE,
             name: module.moduleName,
+            telemetry: {
+              values: [
+                {
+                  key: "utc",
+                  source: "timestamp",
+                  name: "Timestamp",
+                  format: "iso",
+                  hints: {
+                    domain: 1,
+                  },
+                },
+                {
+                  key: "value",
+                  name: "Value",
+                  format: "float",
+                  hints: {
+                    range: 1,
+                  },
+                },
+              ],
+            },
           };
           newModulesObject.composition.push(newModuleObject.identifier);
           this.#addObject(newModuleObject);
