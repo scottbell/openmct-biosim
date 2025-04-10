@@ -53,90 +53,23 @@ export default class BioSimObjectProvider {
     // for each simID, we need to make requests about the modules and globals.
     await Promise.all(
       simIDs.map(async (simID) => {
-        const simulationInstanceDetails = await this.#fetchJSON(simID);
-        // make the sim instance
-        const instanceKey = encodeKey(
-          simID,
-          OBJECT_TYPES.SIMULATION,
-          "instance",
-        );
-        const newSimulationInstanceObject = {
-          identifier: {
-            key: instanceKey,
-            namespace: NAMESPACE_KEY,
-          },
-          type: OBJECT_TYPES.SIMULATION,
-          name: `Simulation ${simID}`,
-          globals: simulationInstanceDetails?.globals,
-          composition: [],
-        };
-        this.#rootObject.composition.push(
-          newSimulationInstanceObject.identifier,
-        );
-        this.#addObject(newSimulationInstanceObject);
-
-        const modulesKey = encodeKey(
-          simID,
-          OBJECT_TYPES.SIM_MODULES,
-          "modules",
-        );
-        const newModulesObject = {
-          identifier: {
-            key: modulesKey,
-            namespace: NAMESPACE_KEY,
-          },
-          type: OBJECT_TYPES.SIM_MODULES,
-          name: `Modules`,
-          composition: [],
-        };
-        newSimulationInstanceObject.composition.push(
-          newModulesObject.identifier,
-        );
-        this.#addObject(newModulesObject);
-
-        const moduleNames = Object.keys(
+        const { simulationInstanceDetails, newSimulationInstanceObject } =
+          await this.#buildInstanceObject(simID);
+        this.#buildGlobalsObject(simID, newSimulationInstanceObject);
+        const unsortedModuleNames = Object.keys(
           simulationInstanceDetails?.modules || {},
         );
-
+        const sortedModuleNames = unsortedModuleNames.sort((a, b) =>
+          a.localeCompare(b),
+        );
         // iterate through modules of details adding objects
-        moduleNames.forEach((moduleName) => {
-          const module = simulationInstanceDetails.modules[moduleName];
-          const moduleKey = encodeKey(
+        sortedModuleNames.forEach((moduleName) => {
+          const moduleDetails = simulationInstanceDetails?.modules[moduleName];
+          this.#buildModuleObject(
             simID,
-            OBJECT_TYPES.SIM_MODULE,
-            module.moduleName,
+            newSimulationInstanceObject,
+            moduleDetails,
           );
-          const newModuleObject = {
-            identifier: {
-              key: moduleKey,
-              namespace: NAMESPACE_KEY,
-            },
-            type: OBJECT_TYPES.SIM_MODULE,
-            name: module.moduleName,
-            telemetry: {
-              values: [
-                {
-                  key: "utc",
-                  source: "timestamp",
-                  name: "Timestamp",
-                  format: "iso",
-                  hints: {
-                    domain: 1,
-                  },
-                },
-                {
-                  key: "value",
-                  name: "Value",
-                  format: "float",
-                  hints: {
-                    range: 1,
-                  },
-                },
-              ],
-            },
-          };
-          newModulesObject.composition.push(newModuleObject.identifier);
-          this.#addObject(newModuleObject);
         });
       }),
     );
@@ -156,5 +89,56 @@ export default class BioSimObjectProvider {
 
   supportsSearchType(type) {
     return false;
+  }
+
+  #buildGlobalsObject(simID, parent) {
+    const globalsKey = encodeKey(simID, OBJECT_TYPES.GLOBALS, "globals");
+    const newGlobalsObject = {
+      identifier: {
+        key: globalsKey,
+        namespace: NAMESPACE_KEY,
+      },
+      type: OBJECT_TYPES.GLOBALS,
+      name: `Globals`,
+      composition: [],
+    };
+    parent.composition.push(newGlobalsObject.identifier);
+    this.#addObject(newGlobalsObject);
+  }
+
+  async #buildInstanceObject(simID) {
+    const simulationInstanceDetails = await this.#fetchJSON(simID);
+    const instanceKey = encodeKey(simID, OBJECT_TYPES.SIMULATION, "instance");
+    const newSimulationInstanceObject = {
+      identifier: {
+        key: instanceKey,
+        namespace: NAMESPACE_KEY,
+      },
+      type: OBJECT_TYPES.SIMULATION,
+      name: `Simulation ${simID}`,
+      globals: simulationInstanceDetails?.globals,
+      composition: [],
+    };
+    this.#rootObject.composition.push(newSimulationInstanceObject.identifier);
+    this.#addObject(newSimulationInstanceObject);
+    return { newSimulationInstanceObject, simulationInstanceDetails };
+  }
+
+  #buildModuleObject(simID, parent, moduleDetails) {
+    const moduleKey = encodeKey(
+      simID,
+      OBJECT_TYPES.ACTIVE_MODULE,
+      moduleDetails.moduleName,
+    );
+    const newModuleObject = {
+      identifier: {
+        namespace: NAMESPACE_KEY,
+        key: moduleKey,
+      },
+      name: moduleDetails.moduleName,
+      type: OBJECT_TYPES.ACTIVE_MODULE,
+    };
+    parent.composition.push(newModuleObject.identifier);
+    this.#addObject(newModuleObject);
   }
 }
