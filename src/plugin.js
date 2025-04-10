@@ -29,15 +29,15 @@ export default function installBiosimPlugin(options) {
       cssClass: "icon-folder",
     });
 
+    openmct.types.addType(OBJECT_TYPES.STORE_TELEMETRY, {
+      name: "Store Telemetry",
+      description: "Telemetry data for the store module",
+      cssClass: "icon-telemetry",
+    });
+
     openmct.types.addType(OBJECT_TYPES.ACTIVE_MODULE, {
       name: "Active Module",
       description: "An active module that produces and consumes resources",
-      cssClass: "icon-folder",
-    });
-
-    openmct.types.addType(OBJECT_TYPES.ENVIRONMENT, {
-      name: "Environment",
-      description: "An environmental module that contains a mix of gases",
       cssClass: "icon-folder",
     });
 
@@ -47,16 +47,52 @@ export default function installBiosimPlugin(options) {
       cssClass: "icon-folder",
     });
 
+    openmct.types.addType(OBJECT_TYPES.CONSUMER_TELEMETRY, {
+      name: "Consumer Telemetry",
+      description: "Telemetry data for the consumer module",
+      cssClass: "icon-telemetry",
+    });
+
     openmct.types.addType(OBJECT_TYPES.PRODUCER, {
       name: "Producer",
       description: "A module's production details",
       cssClass: "icon-folder",
     });
 
+    openmct.types.addType(OBJECT_TYPES.PRODUCER_TELEMETRY, {
+      name: "Producer Telemetry",
+      description: "Telemetry data for the producer module",
+      cssClass: "icon-telemetry",
+    });
+
+    openmct.types.addType(OBJECT_TYPES.ENVIRONMENT, {
+      name: "Environment",
+      description: "An environmental module that contains a mix of gases",
+      cssClass: "icon-folder",
+    });
+
+    openmct.types.addType(OBJECT_TYPES.ENVIRONMENT_TELEMETRY, {
+      name: "Environment Telemetry",
+      description: "Telemetry data for the environment module",
+      cssClass: "icon-telemetry",
+    });
+
     openmct.types.addType(OBJECT_TYPES.CREW, {
       name: "Crew",
       description: "A crew module that contains crew members",
       cssClass: "icon-folder",
+    });
+
+    openmct.types.addType(OBJECT_TYPES.CREW_MEMBER, {
+      name: "Crew Member",
+      description: "A member of a crew",
+      cssClass: "icon-folder",
+    });
+
+    openmct.types.addType(OBJECT_TYPES.CREW_MEMBER_TELEMETRY, {
+      name: "Crew Member Telemetry",
+      description: "Telemetry data for a crew member",
+      cssClass: "icon-telemetry",
     });
 
     openmct.types.addType(OBJECT_TYPES.SENSOR, {
@@ -67,14 +103,8 @@ export default function installBiosimPlugin(options) {
 
     openmct.types.addType(OBJECT_TYPES.ACTUATOR, {
       name: "Actuator",
-      description: "An cctuator module from the simulation",
+      description: "An actuator module from the simulation",
       cssClass: "icon-folder",
-    });
-
-    openmct.types.addType(OBJECT_TYPES.TELEMETRY, {
-      name: "Simulation Telemetry",
-      description: "Telemetry data produced by the simulation",
-      cssClass: "icon-telemetry",
     });
 
     openmct.objects.addRoot({
