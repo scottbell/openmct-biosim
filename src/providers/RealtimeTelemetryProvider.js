@@ -21,13 +21,30 @@ export default class RealtimeTelemetryProvider {
     try {
       const response = await fetch(url);
       const data = await response.json();
+      // ... existing code ...
       if (data) {
         const timestamp = Date.now();
-        const currentLevel = data?.properties?.currentLevel;
+        const dataSubset = data[subscription.flowDirection];
+        let value = null;
+
+        for (const item of dataSubset) {
+          const connectionIndex = item.connections.indexOf(
+            subscription.connection,
+          );
+          if (connectionIndex !== -1) {
+            const flowRates =
+              item.rates[subscription.flowType.toLowerCase() + "FlowRates"];
+            if (flowRates && flowRates.length > connectionIndex) {
+              value = flowRates[connectionIndex];
+            }
+            break;
+          }
+        }
+
         const datum = {
           id: domainObject.identifier,
           timestamp,
-          value: currentLevel,
+          value,
         };
         subscription.cache.set(timestamp, datum);
         callback(datum);
@@ -74,13 +91,27 @@ export default class RealtimeTelemetryProvider {
     }
 
     const id = domainObject.identifier.key;
-    const { simID, moduleName } = decodeKey(id);
+    const { simID, name, type } = decodeKey(id);
+    let moduleName = name;
+    let connection = null;
+    let flowType = null;
+    let flowDirection = null;
+    if (type === OBJECT_TYPES.PRODUCER_TELEMETRY) {
+      const parts = name.split(".");
+      moduleName = parts[0];
+      connection = parts[1];
+      flowType = parts[2];
+      flowDirection = "producers";
+    }
     const url = `${this.baseURL}/api/simulation/${simID}/modules/${moduleName}`;
 
     const subscription = {
       id,
       moduleName,
       callback,
+      connection,
+      flowType,
+      flowDirection,
       cache: new LRUCache({ max: this.telemetryDataToKeepPerTopic }),
     };
 

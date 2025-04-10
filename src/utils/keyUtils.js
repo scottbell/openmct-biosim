@@ -17,6 +17,6 @@ export function decodeKey(key) {
   return {
     simID: parts[0],
     type: parts[1],
-    moduleName: parts[2],
+    name: parts[2],
   };
 }

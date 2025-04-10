@@ -114,7 +114,7 @@ export default function installBiosimPlugin(options) {
 
     openmct.objects.addProvider(
       NAMESPACE_KEY,
-      new BioSimObjectProvider(options),
+      new BioSimObjectProvider(openmct, options),
     );
 
     const realTimeTelemetryProvider = new RealtimeTelemetryProvider(options);
