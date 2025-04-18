@@ -1,5 +1,5 @@
 import { NAMESPACE_KEY, OBJECT_TYPES, ROOT_KEY } from "../const";
-import { encodeKey } from "../utils/keyUtils";
+import { decodeKey, encodeKey } from "../utils/keyUtils";
 
 // BioSimObjectProvider.js
 // This provider is responsible for fetching and returning BioSim objects for Open MCT.
@@ -29,6 +29,9 @@ export default class BioSimObjectProvider {
     const { key } = identifier;
     await this.#loadBiosimDictionary();
     const object = this.dictionary[key];
+    if (!object) {
+      console.error(`🛑 Object with key ${key} not found`);
+    }
     return object;
   }
 
@@ -357,7 +360,6 @@ export default class BioSimObjectProvider {
       flow.connections.forEach((connection) => {
         if (flow.rates && flow.rates.actualFlowRates) {
           this.#buildFlowrateTelemetry({
-            simID,
             parent: flowGroup,
             connection,
             flowCategory: "Actual",
@@ -366,7 +368,6 @@ export default class BioSimObjectProvider {
         }
         if (flow.rates && flow.rates.desiredFlowRates) {
           this.#buildFlowrateTelemetry({
-            simID,
             parent: flowGroup,
             connection,
             flowCategory: "Desired",
@@ -420,15 +421,9 @@ export default class BioSimObjectProvider {
     return storeObject;
   }
 
-  #buildFlowrateTelemetry({
-    simID,
-    parent,
-    connection,
-    flowCategory,
-    moduleName = parent.name,
-    telemetryType,
-  }) {
-    const name = `${moduleName}.${connection}.${flowCategory}`;
+  #buildFlowrateTelemetry({ parent, connection, flowCategory, telemetryType }) {
+    const { simID, name: parentName } = decodeKey(parent.identifier.key);
+    const name = `${parentName}.${connection}.${flowCategory}`;
     const telemetryKey = encodeKey(simID, telemetryType, name);
     const telemetryObject = {
       identifier: {
@@ -440,6 +435,7 @@ export default class BioSimObjectProvider {
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       telemetry: this.#getInitializedTelemetry(),
     };
+    console.debug(`🌎 Creating Telemetry: ${telemetryObject.identifier.key}`);
     const telemetryValue = {
       key: name,
       name: "Value",
