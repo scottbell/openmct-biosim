@@ -4,7 +4,7 @@ This project provides a plugin for connecting [Open MCT](https://github.com/nasa
 <img width="1607" alt="biosim-with-openmct" src="https://github.com/user-attachments/assets/0853290a-9d0a-4646-94aa-e8635f3fe027" />
 
 # Requirements
-* Get the latest [Node 18](https://nodejs.org/en/download)
+* Get the latest [Node JS](https://nodejs.org/en/download)
 * Install [BioSim](https://github.com/scottbell/biosim)
 
 # Installation
