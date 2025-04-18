@@ -1,5 +1,5 @@
 # BioSim Plugin for Open MCT
-This project provides a plugin for connecting [Open MCT](https://github.com/nasa/openmct) to [BioSim]](https://github.com/scottbell/biosim).
+This project provides a plugin for connecting [Open MCT](https://github.com/nasa/openmct) to [BioSim](https://github.com/scottbell/biosim).
 
 <img width="1607" alt="biosim-with-openmct" src="https://github.com/user-attachments/assets/0853290a-9d0a-4646-94aa-e8635f3fe027" />
 
