@@ -102,6 +102,12 @@ export default class RealtimeTelemetryProvider {
       connection = parts[1];
       flowType = parts[2];
       flowDirection = "producers";
+    } else if (type === OBJECT_TYPES.CONSUMER_TELEMETRY) {
+      const parts = name.split(".");
+      moduleName = parts[0];
+      connection = parts[1];
+      flowType = parts[2];
+      flowDirection = "consumers";
     }
     const url = `${this.baseURL}/api/simulation/${simID}/modules/${moduleName}`;
 

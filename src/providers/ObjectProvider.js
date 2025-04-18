@@ -99,7 +99,6 @@ export default class BioSimObjectProvider {
       },
       type: OBJECT_TYPES.GLOBALS,
       name: `Globals`,
-      composition: [],
     };
     parent.composition.push(newGlobalsObject.identifier);
     this.#addObject(newGlobalsObject);
@@ -298,114 +297,84 @@ export default class BioSimObjectProvider {
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
-    this.#buildConsumers(simID, activeModuleObject, moduleDetails.consumers);
-    this.#buildProducers(simID, activeModuleObject, moduleDetails.producers);
+    this.#buildFlowrateControllable({
+      simID,
+      parent: activeModuleObject,
+      flows: moduleDetails.consumers,
+      telemetryType: OBJECT_TYPES.CONSUMER_TELEMETRY,
+    });
+    this.#buildFlowrateControllable({
+      simID,
+      parent: activeModuleObject,
+      flows: moduleDetails.producers,
+      telemetryType: OBJECT_TYPES.PRODUCER_TELEMETRY,
+    });
     return activeModuleObject;
   }
 
-  #buildConsumers(simID, parent, consumers) {
-    if (!consumers) {
-      return;
-    }
-    consumers.forEach((consumer) => {
-      const consumptionGroupObject = this.#buildConsumptionGroup(
-        simID,
-        parent,
-        consumer,
-      );
-      consumer.connections.forEach((connection) => {
-        if (consumer.rates && consumer.rates.actualFlowRates) {
-          this.#buildConsumerTelemetry(
-            simID,
-            consumptionGroupObject,
-            connection,
-            "Actual",
-          );
-        }
-        if (consumer.rates && consumer.rates.desiredFlowRates) {
-          this.#buildConsumerTelemetry(
-            simID,
-            consumptionGroupObject,
-            connection,
-            "Desired",
-          );
-        }
-      });
-    });
-  }
+  #buildFlowGroup({ simID, parent, flowType, telemetryType }) {
+    // Determine the group type based on the consumer type.
+    const groupType =
+      telemetryType === OBJECT_TYPES.CONSUMER_TELEMETRY
+        ? OBJECT_TYPES.CONSUMER
+        : OBJECT_TYPES.PRODUCER;
 
-  #buildConsumptionGroup(simID, parent, consumer) {
-    const consumptionKey = encodeKey(
+    // Use the group type to determine the group label.
+    const groupLabel =
+      groupType === OBJECT_TYPES.CONSUMER ? "Consumers" : "Producers";
+
+    const groupKey = encodeKey(
       simID,
-      OBJECT_TYPES.CONSUMER,
-      `${parent.name}_${consumer.type}_consumption`,
+      groupType,
+      `${parent.name}_${flowType}_${groupLabel.toLowerCase()}`,
     );
-    const consumptionGroup = {
+    const groupObject = {
       identifier: {
-        key: consumptionKey,
+        key: groupKey,
         namespace: NAMESPACE_KEY,
       },
-      name: `${consumer.type} Consumption`,
-      type: OBJECT_TYPES.CONSUMER,
+      name: `${flowType} ${groupLabel}`,
+      type: groupType,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
-    parent.composition.push(consumptionGroup.identifier);
-    this.#addObject(consumptionGroup);
-    return consumptionGroup;
+    parent.composition.push(groupObject.identifier);
+    this.#addObject(groupObject);
+    return groupObject;
   }
 
-  #buildProducers(simID, parent, producers) {
-    if (!producers) {
+  #buildFlowrateControllable({ simID, parent, flows, telemetryType }) {
+    if (!flows) {
       return;
     }
-    producers.forEach((producer) => {
-      const productionGroupObject = this.#buildProductionGroup(
+    flows.forEach((flow) => {
+      const flowGroup = this.#buildFlowGroup({
         simID,
         parent,
-        producer,
-      );
-      producer.connections.forEach((connection) => {
-        if (producer.rates && producer.rates.actualFlowRates) {
-          this.#buildProducerTelemetry(
+        flowType: flow.type,
+        telemetryType,
+      });
+      flow.connections.forEach((connection) => {
+        if (flow.rates && flow.rates.actualFlowRates) {
+          this.#buildFlowrateTelemetry({
             simID,
-            productionGroupObject,
+            parent: flowGroup,
             connection,
-            "Actual",
-            parent.name,
-          );
+            flowCategory: "Actual",
+            telemetryType,
+          });
         }
-        if (producer.rates && producer.rates.desiredFlowRates) {
-          this.#buildProducerTelemetry(
+        if (flow.rates && flow.rates.desiredFlowRates) {
+          this.#buildFlowrateTelemetry({
             simID,
-            productionGroupObject,
+            parent: flowGroup,
             connection,
-            "Desired",
-          );
+            flowCategory: "Desired",
+            telemetryType,
+          });
         }
       });
     });
-  }
-
-  #buildProductionGroup(simID, parent, consumer) {
-    const productionKey = encodeKey(
-      simID,
-      OBJECT_TYPES.PRODUCER,
-      `${parent.name}_${consumer.type}_production`,
-    );
-    const productionGroup = {
-      identifier: {
-        key: productionKey,
-        namespace: NAMESPACE_KEY,
-      },
-      type: OBJECT_TYPES.PRODUCER,
-      name: `${consumer.type} Production`,
-      location: this.#openmct.objects.makeKeyString(parent.identifier),
-      composition: [],
-    };
-    parent.composition.push(productionGroup.identifier);
-    this.#addObject(productionGroup);
-    return productionGroup;
   }
 
   // Skeleton function for building store modules.
@@ -440,9 +409,9 @@ export default class BioSimObjectProvider {
           },
           name: field,
           type: OBJECT_TYPES.STORE_TELEMETRY,
-          composition: [],
           location: this.#openmct.objects.makeKeyString(storeObject.identifier),
           value: moduleDetails.properties[field],
+          configuration: {},
         };
         storeObject.composition.push(telemetryObject.identifier);
         this.#addObject(telemetryObject);
@@ -451,56 +420,23 @@ export default class BioSimObjectProvider {
     return storeObject;
   }
 
-  // Updated skeleton function for building consumer telemetry objects with connection differentiation.
-  #buildConsumerTelemetry(simID, parent, connection, flowCategory, moduleName) {
+  #buildFlowrateTelemetry({
+    simID,
+    parent,
+    connection,
+    flowCategory,
+    moduleName = parent.name,
+    telemetryType,
+  }) {
     const name = `${moduleName}.${connection}.${flowCategory}`;
-    const telemetryKey = encodeKey(
-      simID,
-      OBJECT_TYPES.CONSUMER_TELEMETRY,
-      name,
-    );
-    const consumerObject = {
+    const telemetryKey = encodeKey(simID, telemetryType, name);
+    const telemetryObject = {
       identifier: {
         key: telemetryKey,
         namespace: NAMESPACE_KEY,
       },
       name: `${connection} ${flowCategory} Flow Rate`,
-      type: OBJECT_TYPES.CONSUMER_TELEMETRY,
-      location: this.#openmct.objects.makeKeyString(parent.identifier),
-      composition: [],
-      telemetry: this.#getInitializedTelemetry(),
-      // Skeleton: Additional properties using flowRates can be added here.
-    };
-    const telemetryValue = {
-      key: name,
-      source: "value",
-      name: name,
-      format: "float",
-      hints: {
-        domain: 1,
-      },
-    };
-    consumerObject.telemetry.values.push(telemetryValue);
-    parent.composition.push(consumerObject.identifier);
-    this.#addObject(consumerObject);
-    return consumerObject;
-  }
-
-  // Updated skeleton function for building producer telemetry objects with connection differentiation.
-  #buildProducerTelemetry(simID, parent, connection, flowCategory, moduleName) {
-    const name = `${moduleName}.${connection}.${flowCategory}`;
-    const telemetryKey = encodeKey(
-      simID,
-      OBJECT_TYPES.PRODUCER_TELEMETRY,
-      name,
-    );
-    const producerObject = {
-      identifier: {
-        key: telemetryKey,
-        namespace: NAMESPACE_KEY,
-      },
-      name: `${connection} ${flowCategory} Flow Rate`,
-      type: OBJECT_TYPES.PRODUCER_TELEMETRY,
+      type: telemetryType,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       telemetry: this.#getInitializedTelemetry(),
     };
@@ -513,9 +449,9 @@ export default class BioSimObjectProvider {
         range: 1,
       },
     };
-    producerObject.telemetry.values.push(telemetryValue);
-    parent.composition.push(producerObject.identifier);
-    this.#addObject(producerObject);
-    return producerObject;
+    telemetryObject.telemetry.values.push(telemetryValue);
+    parent.composition.push(telemetryObject.identifier);
+    this.#addObject(telemetryObject);
+    return telemetryObject;
   }
 }
