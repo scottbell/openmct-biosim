@@ -226,6 +226,52 @@ export default class BioSimObjectProvider {
       // Skeleton: Add additional properties as needed.
       composition: [],
     };
+
+    const telemetryFields = [
+      "temperature",
+      "temperatureInKelvin",
+      "lightIntensity",
+      "currentVolume",
+      "initialVolume",
+      "dayLength",
+      "hourOfDayStart",
+      "maxLumens",
+      "relativeHumidity",
+      "airLockVolume",
+      "totalPressure",
+      "totalMoles",
+      "dangerousOxygenThreshold",
+      "leakRate",
+      "initialTotalPressure",
+      "o2Moles",
+      "co2Moles",
+      "otherMoles",
+      "vaporMoles",
+      "nitrogenMoles",
+    ];
+    telemetryFields.forEach((field) => {
+      const name = `${moduleDetails.moduleName}.${field}`;
+      const telemetryKey = encodeKey(
+        simID,
+        OBJECT_TYPES.ENVIRONMENT_TELEMETRY,
+        name,
+      );
+      const telemetryObject = {
+        identifier: {
+          key: telemetryKey,
+          namespace: NAMESPACE_KEY,
+        },
+        name: field,
+        type: OBJECT_TYPES.ENVIRONMENT_TELEMETRY,
+        location: this.#openmct.objects.makeKeyString(
+          environmentObject.identifier,
+        ),
+        configuration: {},
+        telemetry: this.#getInitializedTelemetry(name),
+      };
+      environmentObject.composition.push(telemetryObject.identifier);
+      this.#addObject(telemetryObject);
+    });
     return environmentObject;
   }
 
@@ -300,25 +346,60 @@ export default class BioSimObjectProvider {
     return crewObject;
   }
 
-  // Skeleton function for building crew member modules.
   #buildCrewMember(simID, parent, crewMemberDetails) {
-    // Assuming crewMemberDetails is an object with a name property.
+    // replace spaces in name with underscores
+    const crewMemberName = crewMemberDetails.name.replace(/\s+/g, "_");
     const memberKey = encodeKey(
       simID,
       OBJECT_TYPES.CREW_MEMBER,
-      crewMemberDetails.name,
+      crewMemberName,
     );
     const crewMemberObject = {
       identifier: {
         key: memberKey,
         namespace: NAMESPACE_KEY,
       },
-      name: crewMemberDetails.name,
+      name: crewMemberName,
       type: OBJECT_TYPES.CREW_MEMBER,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
-      // Skeleton: Add additional properties as needed.
     };
+    const telemetryFields = [
+      "age",
+      "weight",
+      "timeActivityPerformed",
+      "currentActivityIntensity",
+      "currentActivityTimeLength",
+      "O2Consumed",
+      "CO2Produced",
+      "caloriesConsumed",
+      "potableWaterConsumed",
+      "dirtyWaterProduced",
+      "greyWaterProduced",
+    ];
+    telemetryFields.forEach((field) => {
+      const name = `${parent.name}.${crewMemberName}.${field}`;
+      const telemetryKey = encodeKey(
+        simID,
+        OBJECT_TYPES.CREW_MEMBER_TELEMETRY,
+        name,
+      );
+      const telemetryObject = {
+        identifier: {
+          key: telemetryKey,
+          namespace: NAMESPACE_KEY,
+        },
+        name: field,
+        type: OBJECT_TYPES.CREW_MEMBER_TELEMETRY,
+        location: this.#openmct.objects.makeKeyString(
+          crewMemberObject.identifier,
+        ),
+        configuration: {},
+        telemetry: this.#getInitializedTelemetry(name),
+      };
+      crewMemberObject.composition.push(telemetryObject.identifier);
+      this.#addObject(telemetryObject);
+    });
     return crewMemberObject;
   }
 

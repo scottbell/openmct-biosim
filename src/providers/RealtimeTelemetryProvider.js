@@ -25,8 +25,8 @@ export default class RealtimeTelemetryProvider {
         const timestamp = Date.now();
         let value = null;
         if (subscription.type === OBJECT_TYPES.STORE_TELEMETRY) {
-          const { storeField } = subscription.details;
-          value = data.properties[storeField];
+          const { field } = subscription.details;
+          value = data.properties[field];
         } else if (subscription.type === OBJECT_TYPES.SENSOR) {
           value = data.properties.value;
         } else if (
@@ -48,8 +48,19 @@ export default class RealtimeTelemetryProvider {
             }
           }
         } else if (subscription.type === OBJECT_TYPES.GLOBALS_METADATUM) {
-          const { globalField } = subscription.details;
-          value = data[globalField];
+          const { field } = subscription.details;
+          value = data[field];
+        } else if (subscription.type === OBJECT_TYPES.ENVIRONMENT_TELEMETRY) {
+          const { field } = subscription.details;
+          value = data.properties[field];
+        } else if (subscription.type === OBJECT_TYPES.CREW_MEMBER_TELEMETRY) {
+          const { field, crewMemberName } = subscription.details;
+          const specificCrewMember = data.properties.crewPeople.find(
+            (crewMember) => crewMember.name === crewMemberName,
+          );
+          if (specificCrewMember) {
+            value = specificCrewMember[field];
+          }
         }
 
         const datum = {
@@ -118,16 +129,26 @@ export default class RealtimeTelemetryProvider {
     } else if (type === OBJECT_TYPES.STORE_TELEMETRY) {
       const parts = name.split(".");
       details.moduleName = parts[0];
-      details.storeField = parts[1];
+      details.field = parts[1];
     } else if (type === OBJECT_TYPES.SENSOR) {
       details.moduleName = name;
+    } else if (type === OBJECT_TYPES.ENVIRONMENT_TELEMETRY) {
+      const parts = name.split(".");
+      details.moduleName = parts[0];
+      details.field = parts[1];
+    } else if (type === OBJECT_TYPES.CREW_MEMBER_TELEMETRY) {
+      const parts = name.split(".");
+      details.moduleName = parts[0];
+      // need to replace the underscore with a space
+      details.crewMemberName = parts[1].replace(/_/g, " ");
+      details.field = parts[2];
     }
     let url = `${this.baseURL}/api/simulation/${simID}/modules/${details.moduleName}`;
 
     if (type === OBJECT_TYPES.GLOBALS_METADATUM) {
       url = `${this.baseURL}/api/simulation/${simID}/globals`;
       const parts = name.split(".");
-      details.globalField = parts[1];
+      details.field = parts[1];
     }
 
     const subscription = {
