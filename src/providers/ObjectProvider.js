@@ -1,5 +1,5 @@
 import { NAMESPACE_KEY, OBJECT_TYPES, ROOT_KEY } from "../const";
-import { decodeKey, encodeKey } from "../utils/keyUtils";
+import { encodeKey } from "../utils/keyUtils";
 
 // BioSimObjectProvider.js
 // This provider is responsible for fetching and returning BioSim objects for Open MCT.
@@ -360,7 +360,9 @@ export default class BioSimObjectProvider {
       flow.connections.forEach((connection) => {
         if (flow.rates && flow.rates.actualFlowRates) {
           this.#buildFlowrateTelemetry({
+            simID,
             parent: flowGroup,
+            moduleName: parent.name,
             connection,
             flowCategory: "Actual",
             telemetryType,
@@ -368,7 +370,9 @@ export default class BioSimObjectProvider {
         }
         if (flow.rates && flow.rates.desiredFlowRates) {
           this.#buildFlowrateTelemetry({
+            simID,
             parent: flowGroup,
+            moduleName: parent.name,
             connection,
             flowCategory: "Desired",
             telemetryType,
@@ -421,9 +425,15 @@ export default class BioSimObjectProvider {
     return storeObject;
   }
 
-  #buildFlowrateTelemetry({ parent, connection, flowCategory, telemetryType }) {
-    const { simID, name: parentName } = decodeKey(parent.identifier.key);
-    const name = `${parentName}.${connection}.${flowCategory}`;
+  #buildFlowrateTelemetry({
+    simID,
+    parent,
+    connection,
+    moduleName,
+    flowCategory,
+    telemetryType,
+  }) {
+    const name = `${moduleName}.${connection}.${flowCategory}`;
     const telemetryKey = encodeKey(simID, telemetryType, name);
     const telemetryObject = {
       identifier: {
