@@ -98,13 +98,13 @@ export default function installBiosimPlugin(options) {
     openmct.types.addType(OBJECT_TYPES.SENSOR, {
       name: "Sensor",
       description: "A sensor module from the simulation",
-      cssClass: "icon-folder",
+      cssClass: "icon-telemetry",
     });
 
     openmct.types.addType(OBJECT_TYPES.ACTUATOR, {
       name: "Actuator",
       description: "An actuator module from the simulation",
-      cssClass: "icon-folder",
+      cssClass: "icon-telemetry",
     });
 
     openmct.objects.addRoot({

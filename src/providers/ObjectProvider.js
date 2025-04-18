@@ -107,7 +107,7 @@ export default class BioSimObjectProvider {
     this.#addObject(newGlobalsObject);
   }
 
-  #getInitializedTelemetry() {
+  #getInitializedTelemetry(name) {
     return {
       values: [
         {
@@ -117,6 +117,15 @@ export default class BioSimObjectProvider {
           format: "iso",
           hints: {
             domain: 1,
+          },
+        },
+        {
+          key: name,
+          name: "Value",
+          format: "float",
+          source: "value",
+          hints: {
+            range: 1,
           },
         },
       ],
@@ -203,8 +212,7 @@ export default class BioSimObjectProvider {
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.SENSOR,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
-      // Skeleton: Add additional properties as needed.
-      composition: [],
+      telemetry: this.#getInitializedTelemetry(moduleDetails.moduleName),
     };
     return sensorObject;
   }
@@ -224,8 +232,6 @@ export default class BioSimObjectProvider {
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.ACTUATOR,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
-      // Skeleton: Add additional properties as needed.
-      composition: [],
     };
     return actuatorObject;
   }
@@ -417,18 +423,8 @@ export default class BioSimObjectProvider {
           type: OBJECT_TYPES.STORE_TELEMETRY,
           location: this.#openmct.objects.makeKeyString(storeObject.identifier),
           configuration: {},
-          telemetry: this.#getInitializedTelemetry(),
+          telemetry: this.#getInitializedTelemetry(name),
         };
-        const telemetryValue = {
-          key: name,
-          name: "Value",
-          format: "float",
-          source: "value",
-          hints: {
-            range: 1,
-          },
-        };
-        telemetryObject.telemetry.values.push(telemetryValue);
         storeObject.composition.push(telemetryObject.identifier);
         this.#addObject(telemetryObject);
       }
@@ -454,18 +450,8 @@ export default class BioSimObjectProvider {
       name: `${connection} ${flowCategory} Flow Rate`,
       type: telemetryType,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
-      telemetry: this.#getInitializedTelemetry(),
+      telemetry: this.#getInitializedTelemetry(name),
     };
-    const telemetryValue = {
-      key: name,
-      name: "Value",
-      format: "float",
-      source: "value",
-      hints: {
-        range: 1,
-      },
-    };
-    telemetryObject.telemetry.values.push(telemetryValue);
     parent.composition.push(telemetryObject.identifier);
     this.#addObject(telemetryObject);
     return telemetryObject;

@@ -27,7 +27,12 @@ export default class RealtimeTelemetryProvider {
         if (subscription.type === OBJECT_TYPES.STORE_TELEMETRY) {
           const { storeField } = subscription.details;
           value = data.properties[storeField];
-        } else {
+        } else if (subscription.type === OBJECT_TYPES.SENSOR) {
+          value = data.properties.value;
+        } else if (
+          subscription.type === OBJECT_TYPES.CONSUMER_TELEMETRY ||
+          subscription.type === OBJECT_TYPES.PRODUCER_TELEMETRY
+        ) {
           const { connection, flowType, flowDirection } = subscription.details;
           const flowDetails = data[flowDirection];
 
@@ -112,6 +117,8 @@ export default class RealtimeTelemetryProvider {
       const parts = name.split(".");
       moduleName = parts[0];
       details.storeField = parts[1];
+    } else if (type === OBJECT_TYPES.SENSOR) {
+      moduleName = name;
     }
     const url = `${this.baseURL}/api/simulation/${simID}/modules/${moduleName}`;
 
