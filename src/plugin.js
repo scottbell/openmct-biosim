@@ -23,6 +23,12 @@ export default function installBiosimPlugin(options) {
       cssClass: "icon-folder",
     });
 
+    openmct.types.addType(OBJECT_TYPES.GLOBALS_METADATUM, {
+      name: "Simulation Global Metadata",
+      description: "Metadata for the simulation instance",
+      cssClass: "icon-telemetry",
+    });
+
     openmct.types.addType(OBJECT_TYPES.STORE, {
       name: "Store Module",
       description: "A store module that contains resources",

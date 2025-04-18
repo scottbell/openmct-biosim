@@ -2,6 +2,7 @@ export const NAMESPACE_KEY = "biosim";
 export const OBJECT_TYPES = {
   SIMULATION: `${NAMESPACE_KEY}.sim`,
   GLOBALS: `${NAMESPACE_KEY}.sim.globals`,
+  GLOBALS_METADATUM: `${NAMESPACE_KEY}.sim.globals.metadatum`,
   STORE: `${NAMESPACE_KEY}.sim.modules.store`,
   STORE_TELEMETRY: `${NAMESPACE_KEY}.sim.modules.store.telemetry`,
   ACTIVE_MODULE: `${NAMESPACE_KEY}.sim.modules.module`,

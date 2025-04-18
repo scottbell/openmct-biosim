@@ -100,11 +100,43 @@ export default class BioSimObjectProvider {
         key: globalsKey,
         namespace: NAMESPACE_KEY,
       },
+      composition: [],
       type: OBJECT_TYPES.GLOBALS,
       name: `Globals`,
     };
     parent.composition.push(newGlobalsObject.identifier);
     this.#addObject(newGlobalsObject);
+
+    const globalFields = [
+      "ticksGoneBy",
+      "myID",
+      "tickLength",
+      "runTillN",
+      "driverStutterLength",
+    ];
+    globalFields.forEach((field) => {
+      const name = `${newGlobalsObject.name}.${field}`;
+      const telemetryKey = encodeKey(
+        simID,
+        OBJECT_TYPES.GLOBALS_METADATUM,
+        name,
+      );
+      const telemetryObject = {
+        identifier: {
+          key: telemetryKey,
+          namespace: NAMESPACE_KEY,
+        },
+        name: field,
+        type: OBJECT_TYPES.GLOBALS_METADATUM,
+        location: this.#openmct.objects.makeKeyString(
+          newGlobalsObject.identifier,
+        ),
+        configuration: {},
+        telemetry: this.#getInitializedTelemetry(name),
+      };
+      newGlobalsObject.composition.push(telemetryObject.identifier);
+      this.#addObject(telemetryObject);
+    });
   }
 
   #getInitializedTelemetry(name) {
@@ -407,27 +439,21 @@ export default class BioSimObjectProvider {
     };
     const telemetryFields = ["currentLevel", "currentCapacity", "overflow"];
     telemetryFields.forEach((field) => {
-      if (moduleDetails.properties[field] !== undefined) {
-        const name = `${moduleDetails.moduleName}.${field}`;
-        const telemetryKey = encodeKey(
-          simID,
-          OBJECT_TYPES.STORE_TELEMETRY,
-          name,
-        );
-        const telemetryObject = {
-          identifier: {
-            key: telemetryKey,
-            namespace: NAMESPACE_KEY,
-          },
-          name: field,
-          type: OBJECT_TYPES.STORE_TELEMETRY,
-          location: this.#openmct.objects.makeKeyString(storeObject.identifier),
-          configuration: {},
-          telemetry: this.#getInitializedTelemetry(name),
-        };
-        storeObject.composition.push(telemetryObject.identifier);
-        this.#addObject(telemetryObject);
-      }
+      const name = `${moduleDetails.moduleName}.${field}`;
+      const telemetryKey = encodeKey(simID, OBJECT_TYPES.STORE_TELEMETRY, name);
+      const telemetryObject = {
+        identifier: {
+          key: telemetryKey,
+          namespace: NAMESPACE_KEY,
+        },
+        name: field,
+        type: OBJECT_TYPES.STORE_TELEMETRY,
+        location: this.#openmct.objects.makeKeyString(storeObject.identifier),
+        configuration: {},
+        telemetry: this.#getInitializedTelemetry(name),
+      };
+      storeObject.composition.push(telemetryObject.identifier);
+      this.#addObject(telemetryObject);
     });
     return storeObject;
   }

@@ -47,6 +47,9 @@ export default class RealtimeTelemetryProvider {
               break;
             }
           }
+        } else if (subscription.type === OBJECT_TYPES.GLOBALS_METADATUM) {
+          const { globalField } = subscription.details;
+          value = data[globalField];
         }
 
         const datum = {
@@ -100,14 +103,13 @@ export default class RealtimeTelemetryProvider {
 
     const id = domainObject.identifier.key;
     const { simID, name, type } = decodeKey(id);
-    let moduleName = null;
     let details = {};
     if (
       type === OBJECT_TYPES.PRODUCER_TELEMETRY ||
       type === OBJECT_TYPES.CONSUMER_TELEMETRY
     ) {
       const parts = name.split(".");
-      moduleName = parts[0];
+      details.moduleName = parts[0];
       details.connection = parts[1];
       details.flowType = parts[2];
       // either "producers" or "consumers" depending on the type
@@ -115,16 +117,21 @@ export default class RealtimeTelemetryProvider {
         type === OBJECT_TYPES.PRODUCER_TELEMETRY ? "producers" : "consumers";
     } else if (type === OBJECT_TYPES.STORE_TELEMETRY) {
       const parts = name.split(".");
-      moduleName = parts[0];
+      details.moduleName = parts[0];
       details.storeField = parts[1];
     } else if (type === OBJECT_TYPES.SENSOR) {
-      moduleName = name;
+      details.moduleName = name;
     }
-    const url = `${this.baseURL}/api/simulation/${simID}/modules/${moduleName}`;
+    let url = `${this.baseURL}/api/simulation/${simID}/modules/${details.moduleName}`;
+
+    if (type === OBJECT_TYPES.GLOBALS_METADATUM) {
+      url = `${this.baseURL}/api/simulation/${simID}/globals`;
+      const parts = name.split(".");
+      details.globalField = parts[1];
+    }
 
     const subscription = {
       id,
-      moduleName,
       callback,
       details,
       type,
