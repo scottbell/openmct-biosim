@@ -21,23 +21,26 @@ export default class RealtimeTelemetryProvider {
     try {
       const response = await fetch(url);
       const data = await response.json();
-      // ... existing code ...
       if (data) {
         const timestamp = Date.now();
-        const dataSubset = data[subscription.flowDirection];
         let value = null;
+        if (subscription.type === OBJECT_TYPES.STORE_TELEMETRY) {
+          const { storeField } = subscription.details;
+          value = data.properties[storeField];
+        } else {
+          const { connection, flowType, flowDirection } = subscription.details;
+          const flowDetails = data[flowDirection];
 
-        for (const item of dataSubset) {
-          const connectionIndex = item.connections.indexOf(
-            subscription.connection,
-          );
-          if (connectionIndex !== -1) {
-            const flowRates =
-              item.rates[subscription.flowType.toLowerCase() + "FlowRates"];
-            if (flowRates && flowRates.length > connectionIndex) {
-              value = flowRates[connectionIndex];
+          for (const flowDetail of flowDetails) {
+            const connectionIndex = flowDetail.connections.indexOf(connection);
+            if (connectionIndex !== -1) {
+              const flowRates =
+                flowDetail.rates[flowType.toLowerCase() + "FlowRates"];
+              if (flowRates && flowRates.length > connectionIndex) {
+                value = flowRates[connectionIndex];
+              }
+              break;
             }
-            break;
           }
         }
 
@@ -92,22 +95,23 @@ export default class RealtimeTelemetryProvider {
 
     const id = domainObject.identifier.key;
     const { simID, name, type } = decodeKey(id);
-    let moduleName = name;
-    let connection = null;
-    let flowType = null;
-    let flowDirection = null;
-    if (type === OBJECT_TYPES.PRODUCER_TELEMETRY) {
+    let moduleName = null;
+    let details = {};
+    if (
+      type === OBJECT_TYPES.PRODUCER_TELEMETRY ||
+      type === OBJECT_TYPES.CONSUMER_TELEMETRY
+    ) {
       const parts = name.split(".");
       moduleName = parts[0];
-      connection = parts[1];
-      flowType = parts[2];
-      flowDirection = "producers";
-    } else if (type === OBJECT_TYPES.CONSUMER_TELEMETRY) {
+      details.connection = parts[1];
+      details.flowType = parts[2];
+      // either "producers" or "consumers" depending on the type
+      details.flowDirection =
+        type === OBJECT_TYPES.PRODUCER_TELEMETRY ? "producers" : "consumers";
+    } else if (type === OBJECT_TYPES.STORE_TELEMETRY) {
       const parts = name.split(".");
       moduleName = parts[0];
-      connection = parts[1];
-      flowType = parts[2];
-      flowDirection = "consumers";
+      details.storeField = parts[1];
     }
     const url = `${this.baseURL}/api/simulation/${simID}/modules/${moduleName}`;
 
@@ -115,9 +119,8 @@ export default class RealtimeTelemetryProvider {
       id,
       moduleName,
       callback,
-      connection,
-      flowType,
-      flowDirection,
+      details,
+      type,
       cache: new LRUCache({ max: this.telemetryDataToKeepPerTopic }),
     };
 

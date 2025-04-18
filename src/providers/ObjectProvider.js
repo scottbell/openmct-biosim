@@ -402,10 +402,11 @@ export default class BioSimObjectProvider {
     const telemetryFields = ["currentLevel", "currentCapacity", "overflow"];
     telemetryFields.forEach((field) => {
       if (moduleDetails.properties[field] !== undefined) {
+        const name = `${moduleDetails.moduleName}.${field}`;
         const telemetryKey = encodeKey(
           simID,
           OBJECT_TYPES.STORE_TELEMETRY,
-          `${moduleDetails.moduleName}_${field}`,
+          name,
         );
         const telemetryObject = {
           identifier: {
@@ -415,9 +416,19 @@ export default class BioSimObjectProvider {
           name: field,
           type: OBJECT_TYPES.STORE_TELEMETRY,
           location: this.#openmct.objects.makeKeyString(storeObject.identifier),
-          value: moduleDetails.properties[field],
           configuration: {},
+          telemetry: this.#getInitializedTelemetry(),
         };
+        const telemetryValue = {
+          key: name,
+          name: "Value",
+          format: "float",
+          source: "value",
+          hints: {
+            range: 1,
+          },
+        };
+        telemetryObject.telemetry.values.push(telemetryValue);
         storeObject.composition.push(telemetryObject.identifier);
         this.#addObject(telemetryObject);
       }
@@ -445,7 +456,6 @@ export default class BioSimObjectProvider {
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       telemetry: this.#getInitializedTelemetry(),
     };
-    console.debug(`🌎 Creating Telemetry: ${telemetryObject.identifier.key}`);
     const telemetryValue = {
       key: name,
       name: "Value",
