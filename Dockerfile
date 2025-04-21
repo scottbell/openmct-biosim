@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 RUN git clone https://github.com/nasa/openmct.git /opt/openmct && \
     cd /opt/openmct && \
     npm install && \
-    npm run build && \
     npm link
 
 # Clone the openmct-biosim repository
