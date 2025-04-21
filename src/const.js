@@ -15,6 +15,9 @@ export const OBJECT_TYPES = {
   CREW: `${NAMESPACE_KEY}.sim.modules.crew`,
   CREW_MEMBER: `${NAMESPACE_KEY}.sim.modules.crew.member`,
   CREW_MEMBER_TELEMETRY: `${NAMESPACE_KEY}.sim.modules.crew.member.telemetry`,
+  BIOMASSPS: `${NAMESPACE_KEY}.sim.modules.biomassps`,
+  BIOMSSPS_SHELF: `${NAMESPACE_KEY}.sim.modules.biomassps.shelf`,
+  BIOMSSPS_SHELF_TELEMETRY: `${NAMESPACE_KEY}.sim.modules.biomassps.shelf.telemetry`,
   SENSOR: `${NAMESPACE_KEY}.sim.modules.sensor`,
   ACTUATOR: `${NAMESPACE_KEY}.sim.modules.actuator`,
 };

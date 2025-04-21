@@ -195,14 +195,12 @@ export default class BioSimObjectProvider {
       newModuleObject = this.#buildActuator(simID, parent, moduleDetails);
     } else if (moduleType.toLowerCase().includes("crew")) {
       newModuleObject = this.#buildCrew(simID, parent, moduleDetails);
+    } else if (moduleType.toLowerCase().includes("biomassps")) {
+      newModuleObject = this.#buildBiomassPS(simID, parent, moduleDetails);
     } else if (moduleDetails.consumers || moduleDetails.producers) {
-      // Active module construction.
       newModuleObject = this.#buildActiveModule(simID, parent, moduleDetails);
     } else if (moduleType.includes("Store")) {
       newModuleObject = this.#buildStore(simID, parent, moduleDetails);
-    } else {
-      // Fallback to active module.
-      newModuleObject = this.#buildActiveModule(simID, parent, moduleDetails);
     }
     parent.composition.push(newModuleObject.identifier);
     this.#addObject(newModuleObject);
@@ -314,7 +312,102 @@ export default class BioSimObjectProvider {
     return actuatorObject;
   }
 
-  // Skeleton function for building crew modules.
+  #buildBiomassPS(simID, parent, moduleDetails) {
+    const moduleKey = encodeKey(simID, "biomassps", moduleDetails.moduleName);
+    const biomassObject = {
+      identifier: {
+        key: moduleKey,
+        namespace: NAMESPACE_KEY,
+      },
+      name: moduleDetails.moduleName,
+      type: OBJECT_TYPES.BIOMASSPS,
+      location: this.#openmct.objects.makeKeyString(parent.identifier),
+      composition: [],
+    };
+
+    // If there are shelves defined in properties, build a shelf object for each
+    if (moduleDetails.properties && moduleDetails.properties.shelves) {
+      let index = 0;
+      moduleDetails.properties.shelves.forEach((shelf) => {
+        const shelfObject = this.#buildBiomassPSShelf(
+          simID,
+          biomassObject,
+          shelf,
+          index,
+        );
+        biomassObject.composition.push(shelfObject.identifier);
+        this.#addObject(shelfObject);
+        index++;
+      });
+    }
+    this.#buildFlowrateControllable({
+      simID,
+      parent: biomassObject,
+      flows: moduleDetails.consumers,
+      telemetryType: OBJECT_TYPES.CONSUMER_TELEMETRY,
+    });
+    this.#buildFlowrateControllable({
+      simID,
+      parent: biomassObject,
+      flows: moduleDetails.producers,
+      telemetryType: OBJECT_TYPES.PRODUCER_TELEMETRY,
+    });
+    return biomassObject;
+  }
+
+  #buildBiomassPSShelf(simID, parent, shelfDetails, index) {
+    const shelfName = `Shelf_${index}_${shelfDetails.plantType}`;
+    const shelfKey = encodeKey(simID, OBJECT_TYPES.BIOMSSPS_SHELF, shelfName);
+    const shelfObject = {
+      identifier: {
+        key: shelfKey,
+        namespace: NAMESPACE_KEY,
+      },
+      name: shelfName,
+      type: OBJECT_TYPES.BIOMSSPS_SHELF,
+      location: this.#openmct.objects.makeKeyString(parent.identifier),
+      composition: [],
+    };
+
+    // Define telemetry fields for the shelf
+    const telemetryFields = [
+      "cropAreaUsed",
+      "cropAreaTotal",
+      "timeTillCanopyClosure",
+      "harvestInterval",
+      "ppfNeeded",
+      "molesOfCO2Inhaled",
+    ];
+
+    // Create telemetry objects for each field
+    telemetryFields.forEach((field) => {
+      const telemetryName = `${shelfObject.name}.${field}`;
+      const telemetryKey = encodeKey(
+        simID,
+        OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY,
+        telemetryName,
+      );
+      const telemetryObject = {
+        identifier: {
+          key: telemetryKey,
+          namespace: NAMESPACE_KEY,
+        },
+        name: field,
+        type: OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY,
+        location: this.#openmct.objects.makeKeyString(shelfObject.identifier),
+        configuration: {},
+        telemetry: this.#getInitializedTelemetry(telemetryName),
+        moduleName: parent.name,
+        field: field,
+        shelfIndex: index,
+      };
+      shelfObject.composition.push(telemetryObject.identifier);
+      this.#addObject(telemetryObject);
+    });
+
+    return shelfObject;
+  }
+
   #buildCrew(simID, parent, moduleDetails) {
     const moduleKey = encodeKey(
       simID,
@@ -343,6 +436,18 @@ export default class BioSimObjectProvider {
         this.#addObject(crewMemberObject);
       });
     }
+    this.#buildFlowrateControllable({
+      simID,
+      parent: crewObject,
+      flows: moduleDetails.consumers,
+      telemetryType: OBJECT_TYPES.CONSUMER_TELEMETRY,
+    });
+    this.#buildFlowrateControllable({
+      simID,
+      parent: crewObject,
+      flows: moduleDetails.producers,
+      telemetryType: OBJECT_TYPES.PRODUCER_TELEMETRY,
+    });
     return crewObject;
   }
 

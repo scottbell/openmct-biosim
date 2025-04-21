@@ -40,11 +40,8 @@ export default class RealtimeTelemetryProvider {
    * @param {Object|string} domainObjectOrID - The domain object or subscriber ID
    * @returns {Object} The telemetry details
    */
-  #createTelemetryDetails(domainObjectOrID) {
-    const subscriberID =
-      typeof domainObjectOrID === "string"
-        ? domainObjectOrID
-        : domainObjectOrID.identifier.key;
+  #createTelemetryDetails(domainObject) {
+    const subscriberID = domainObject.identifier.key;
 
     const { simID, name, type } = decodeKey(subscriberID);
     const details = {};
@@ -75,6 +72,10 @@ export default class RealtimeTelemetryProvider {
       // need to replace the underscore with a space
       details.crewMemberName = parts[1].replace(/_/g, " ");
       details.field = parts[2];
+    } else if (type === OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY) {
+      details.moduleName = domainObject.moduleName;
+      details.field = domainObject.field;
+      details.shelfIndex = domainObject.shelfIndex;
     } else if (type === OBJECT_TYPES.GLOBALS_METADATUM) {
       const parts = name.split(".");
       details.field = parts[1];
@@ -152,6 +153,19 @@ export default class RealtimeTelemetryProvider {
         );
         if (specificCrewMember) {
           value = specificCrewMember[field];
+        }
+      }
+    } else if (type === OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY) {
+      const { moduleName, field, shelfIndex } = details;
+      const moduleData = data.modules[moduleName];
+      if (
+        moduleData &&
+        moduleData.properties &&
+        moduleData.properties.shelves
+      ) {
+        const specificShelf = moduleData.properties.shelves[shelfIndex];
+        if (specificShelf) {
+          value = specificShelf[field];
         }
       }
     }

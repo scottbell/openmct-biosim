@@ -8,7 +8,7 @@ const config = {
 const openmct = window.openmct;
 
 (function () {
-  const THIRTY_MINUTES = 30 * 60 * 1000;
+  const TWO_MINUTES = 2 * 60 * 1000;
 
   openmct.setAssetPath("/node_modules/openmct/dist");
 
@@ -39,7 +39,7 @@ const openmct = window.openmct;
             timeSystem: "utc",
             clock: "local",
             clockOffsets: {
-              start: -THIRTY_MINUTES,
+              start: -TWO_MINUTES,
               end: 0,
             },
           },
@@ -47,7 +47,7 @@ const openmct = window.openmct;
             name: "Fixed",
             timeSystem: "utc",
             bounds: {
-              start: Date.now() - THIRTY_MINUTES,
+              start: Date.now() - TWO_MINUTES,
               end: 0,
             },
           },

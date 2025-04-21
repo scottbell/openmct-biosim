@@ -101,6 +101,24 @@ export default function installBiosimPlugin(options) {
       cssClass: "icon-telemetry",
     });
 
+    openmct.types.addType(OBJECT_TYPES.BIOMASSPS, {
+      name: "Biomass PS",
+      description: "A biomass production system module. Crops are grown here.",
+      cssClass: "icon-folder",
+    });
+
+    openmct.types.addType(OBJECT_TYPES.BIOMSSPS_SHELF, {
+      name: "Biomass PS Shelf",
+      description: "A shelf inside a biomass production system module",
+      cssClass: "icon-folder",
+    });
+
+    openmct.types.addType(OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY, {
+      name: "Biomass PS Shelf Telemetry",
+      description: "Telemetry data for a biomass production system shelf",
+      cssClass: "icon-telemetry",
+    });
+
     openmct.types.addType(OBJECT_TYPES.SENSOR, {
       name: "Sensor",
       description: "A sensor module from the simulation",
