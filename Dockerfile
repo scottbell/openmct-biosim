@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 # Install git so we can clone repositories
 RUN apk add --no-cache git
