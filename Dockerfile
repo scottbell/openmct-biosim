@@ -1,7 +1,6 @@
 FROM node:20-slim
 
-# Install git so we can clone repositories
-RUN apk add --no-cache git
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 # Clone and set up Open MCT in /opt/openmct, then link it globally
 RUN git clone https://github.com/nasa/openmct.git /opt/openmct && \
