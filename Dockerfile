@@ -1,23 +1,19 @@
-FROM node:20-slim
+FROM node:20-alpine
 
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# Install git so we can clone the repo
+RUN apk add --no-cache git
 
-# Clone and set up Open MCT in /opt/openmct, then link it globally
-RUN git clone https://github.com/nasa/openmct.git /opt/openmct && \
-    cd /opt/openmct && \
-    npm install && \
-    npm link
-
-# Clone the openmct-biosim repository
+# Clone the repository and build the project
 RUN git clone https://github.com/scottbell/openmct-biosim /app/openmct-biosim
 WORKDIR /app/openmct-biosim
 
-# Install openmct-biosim dependencies
+RUN git clone https://github.com/nasa/openmct.git node_modules/openmct
 RUN npm install
 
-# Link the globally installed Open MCT into openmct-biosim's node_modules
-RUN npm link openmct
+# Build Open MCT
+RUN cd node_modules/openmct && npm install && npm run build
+RUN npm run build:example
 
-# Expose port 9091 and start the server
+# Expose port 9091 and specify the command to start the server
 EXPOSE 9091
 CMD ["npm", "start"]
