@@ -10,7 +10,7 @@ export default class RealtimeTelemetryProvider {
     baseURL,
     pollingInterval,
   }) {
-    this.subscriptionsById = {};
+    this.subscriptionsByID = {};
     this.telemetryDataToKeepPerTopic = telemetryDataToKeepPerModule || 1000;
     this.unsubscribeFromModulesOnStop = unsubscribeFromModulesOnStop;
     this.baseURL = baseURL || "http://localhost:8009";
@@ -81,7 +81,7 @@ export default class RealtimeTelemetryProvider {
     const startTelemetry = options.start;
     const endTelemetry = options.end;
     const subscriberID = domainObject.identifier.key;
-    const cache = this.subscriptionsById[subscriberID]?.cache;
+    const cache = this.subscriptionsByID[subscriberID]?.cache;
     let dataToBeReturned = [];
     const cacheIterator = cache ? cache.values() : null;
 
@@ -108,12 +108,11 @@ export default class RealtimeTelemetryProvider {
 
   // eslint-disable-next-line require-await
   async #buildSubscription(domainObject, callback) {
-    if (this.subscriptionsById[domainObject.identifier.key]) {
-      return this.subscriptionsById[domainObject.identifier.key];
+    const subscriberID = domainObject.identifier.key;
+    if (this.subscriptionsByID[subscriberID]) {
+      return this.subscriptionsByID[subscriberID];
     }
-
-    const id = domainObject.identifier.key;
-    const { simID, name, type } = decodeKey(id);
+    const { simID, name, type } = decodeKey(subscriberID);
     let details = {};
     if (
       type === OBJECT_TYPES.PRODUCER_TELEMETRY ||
@@ -152,7 +151,7 @@ export default class RealtimeTelemetryProvider {
     }
 
     const subscription = {
-      id,
+      id: subscriberID,
       callback,
       details,
       type,
@@ -184,15 +183,18 @@ export default class RealtimeTelemetryProvider {
     const subscriberID = domainObject.identifier.key;
     this.#buildSubscription(domainObject, callback).then(
       (subscriptionDetails) => {
-        this.subscriptionsById[subscriberID] = subscriptionDetails;
+        this.subscriptionsByID[subscriberID] = subscriptionDetails;
       },
     );
 
     // Return an unsubscribe function that will clear the polling timer.
     return () => {
-      if (this.subscriptionsById[subscriberID]) {
-        clearInterval(this.subscriptionsById[subscriberID].timer);
-        delete this.subscriptionsById[subscriberID];
+      if (
+        this.unsubscribeFromModulesOnStop &&
+        this.subscriptionsByID[subscriberID]
+      ) {
+        clearInterval(this.subscriptionsByID[subscriberID].timer);
+        delete this.subscriptionsByID[subscriberID];
       }
     };
   }

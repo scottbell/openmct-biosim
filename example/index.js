@@ -1,6 +1,11 @@
 import installBiosimPlugin from "../src/plugin.js";
 
-const config = {};
+const config = {
+  unsubscribeFromModulesOnStop: true,
+  baseUrl: "http://localhost:8009",
+  pollingInterval: 500,
+  telemetryDataToKeepPerTopic: 1000,
+};
 const openmct = window.openmct;
 
 (function () {
