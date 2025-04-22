@@ -11,7 +11,7 @@ This project provides a plugin for connecting [Open MCT](https://github.com/nasa
 ```
 git clone https://github.com/scottbell/openmct-biosim
 cd openmct-biosim
-npm install
+npm install && npm run build:dev
 npm start
 ```
 
