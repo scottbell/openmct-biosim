@@ -13,7 +13,7 @@ const openmct = window.openmct;
   openmct.setAssetPath("/openmct");
 
   installDefaultPlugins();
-  openmct.install(openmctBiosimPlugin.installBiosimPlugin(config));
+  openmct.install(openmctBiosimPlugin(config));
 
   openmct.start();
 

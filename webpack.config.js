@@ -34,6 +34,7 @@ const WEBPACK_CONFIG = {
     libraryTarget: "umd",
     library: "openmctBiosimPlugin",
     charset: true,
+    libraryExport: "default",
   },
   devtool: devMode ? "eval-source-map" : "source-map",
   devServer: {
