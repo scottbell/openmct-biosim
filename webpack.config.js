@@ -24,7 +24,6 @@ const WEBPACK_CONFIG = {
         test: /\.js$/,
         enforce: "pre",
         use: ["source-map-loader"],
-        exclude: /node_modules/,
       },
     ],
   },
@@ -34,9 +33,7 @@ const WEBPACK_CONFIG = {
     path: path.resolve(__dirname, "dist"),
     libraryTarget: "umd",
     library: "openmctBiosim",
-  },
-  externals: {
-    openmct: "openmct",
+    charset: true,
   },
   devtool: devMode ? "eval-source-map" : "source-map",
   devServer: {
