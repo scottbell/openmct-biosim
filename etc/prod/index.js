@@ -1,4 +1,4 @@
-const installBiosimPlugin = window.installBiosimPlugin;
+const openmctBiosimPlugin = window.openmctBiosimPlugin;
 
 const config = {
   baseUrl: "http://localhost:8009",
@@ -13,7 +13,7 @@ const openmct = window.openmct;
   openmct.setAssetPath("/openmct");
 
   installDefaultPlugins();
-  openmct.install(installBiosimPlugin(config));
+  openmct.install(openmctBiosimPlugin(config));
 
   openmct.start();
 

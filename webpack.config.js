@@ -32,7 +32,7 @@ const WEBPACK_CONFIG = {
     filename: "[name].js",
     path: path.resolve(__dirname, "dist"),
     libraryTarget: "umd",
-    library: "openmctBiosim",
+    library: "openmctBiosimPlugin",
     charset: true,
   },
   devtool: devMode ? "eval-source-map" : "source-map",
