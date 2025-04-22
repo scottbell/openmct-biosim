@@ -1,4 +1,4 @@
-import installBiosimPlugin from "../src/plugin.js";
+import installBiosimPlugin from "../../src/plugin.js";
 
 const config = {
   baseUrl: "http://localhost:8009",
