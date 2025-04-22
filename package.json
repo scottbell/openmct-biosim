@@ -5,9 +5,8 @@
     "main": "dist/index.js",
     "scripts": {
         "clean": "rm -rf ./dist ./node_modules",
-        "build": "webpack --mode production",
-        "build:dev": "npm install nasa/openmct#master --no-save",
-        "build:prod": "npm install nasa/openmct#master --no-save && webpack --mode production",
+        "build:dev": "npm install nasa/openmct#master --no-save && webpack",
+        "build:prod": "npm install nasa/openmct#master --no-save && NODE_ENV=production webpack",
         "start": "webpack serve --mode development"
     },
     "keywords": [
