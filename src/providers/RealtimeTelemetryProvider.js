@@ -8,13 +8,11 @@ export default class RealtimeTelemetryProvider {
     telemetryDataToKeepPerModule,
     unsubscribeFromModulesOnStop,
     baseURL,
-    pollingInterval,
   }) {
     this.subscriptionsByID = {};
     this.telemetryDataToKeepPerTopic = telemetryDataToKeepPerModule || 1000;
     this.unsubscribeFromModulesOnStop = unsubscribeFromModulesOnStop;
     this.baseURL = baseURL || "http://localhost:8009";
-    this.pollingInterval = pollingInterval || 1000; // Default to 1 second
     // Map to store WebSocket connections by simulation ID
     this.websocketsBySimID = {};
     // Map to store LRU caches by simulation ID
