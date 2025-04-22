@@ -44,7 +44,7 @@ const WEBPACK_CONFIG = {
       },
       {
         directory: path.join(__dirname, "/node_modules/openmct/dist"),
-        publicPath: "/node_modules/openmct/dist",
+        publicPath: "/openmct",
       },
     ],
   },

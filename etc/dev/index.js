@@ -10,7 +10,7 @@ const openmct = window.openmct;
 (function () {
   const TWO_MINUTES = 2 * 60 * 1000;
 
-  openmct.setAssetPath("/node_modules/openmct/dist");
+  openmct.setAssetPath("/openmct/");
 
   installDefaultPlugins();
   openmct.install(installBiosimPlugin(config));

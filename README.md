@@ -12,7 +12,6 @@ This project provides a plugin for connecting [Open MCT](https://github.com/nasa
 git clone https://github.com/scottbell/openmct-biosim
 cd openmct-biosim
 npm install
-npm run build:dev
 npm start
 ```
 
@@ -20,4 +19,4 @@ This should build for development and run the Open MCT development server. After
 If you start a simulation, you'll see details of all the aspects of the simulation.
 
 This will start the Open MCT web application connected to a running BioSim server on `http://localhost:8009`.
-Note you can change the hostname/IP of the BioSim server in `example/index.js` as the option `baseUrl` to the plugin constructor.
+Note you can change the hostname/IP of the BioSim server in `etc/dev/index.js` as the option `baseUrl` to the plugin constructor.
