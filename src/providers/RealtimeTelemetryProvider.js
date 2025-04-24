@@ -341,6 +341,10 @@ export default class RealtimeTelemetryProvider {
     return Object.values(OBJECT_TYPES).includes(domainObject.type);
   }
 
+  subscribeToLimits(domainObject, callback) {
+    // does nothing
+  }
+
   subscribe(domainObject, callback) {
     const subscriberID = domainObject.identifier.key;
     this.#buildSubscription(domainObject, callback).then(
