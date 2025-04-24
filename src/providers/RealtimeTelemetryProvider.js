@@ -78,6 +78,7 @@ export default class RealtimeTelemetryProvider {
     }
 
     let value = null;
+    let monitoringResult = "NOMINAL";
 
     if (type === OBJECT_TYPES.STORE_TELEMETRY) {
       const { moduleName, field } = details;
@@ -88,16 +89,15 @@ export default class RealtimeTelemetryProvider {
     } else if (type === OBJECT_TYPES.SENSOR) {
       const { moduleName } = details;
       const moduleData = data.modules[moduleName];
-      if (moduleData && moduleData.properties) {
-        value = moduleData.properties.value;
-      }
+      value = moduleData.properties.value;
+      monitoringResult = moduleData.properties.monitoringResult;
     } else if (
       type === OBJECT_TYPES.CONSUMER_TELEMETRY ||
       type === OBJECT_TYPES.PRODUCER_TELEMETRY
     ) {
       const { moduleName, connection, flowType, flowDirection } = details;
       const moduleData = data.modules[moduleName];
-      if (moduleData && moduleData[flowDirection]) {
+      if (moduleData?.[flowDirection]) {
         const flowDetails = moduleData[flowDirection];
         for (const flowDetail of flowDetails) {
           const connectionIndex = flowDetail.connections.indexOf(connection);
@@ -119,9 +119,7 @@ export default class RealtimeTelemetryProvider {
     } else if (type === OBJECT_TYPES.ENVIRONMENT_TELEMETRY) {
       const { moduleName, field } = details;
       const moduleData = data.modules[moduleName];
-      if (moduleData && moduleData.properties) {
-        value = moduleData.properties[field];
-      }
+      value = moduleData.properties[field];
     } else if (type === OBJECT_TYPES.CREW_MEMBER_TELEMETRY) {
       const { moduleName, crewMemberName, field } = details;
       const moduleData = data.modules[moduleName];
@@ -149,7 +147,7 @@ export default class RealtimeTelemetryProvider {
       return null;
     }
 
-    return value;
+    return { value, monitoringResult };
   }
 
   /**
@@ -172,12 +170,17 @@ export default class RealtimeTelemetryProvider {
       if (subscription.details.simID !== simID) {
         return;
       }
-      const value = this.#extractTelemetryValue(data, details, type);
+      const { value, monitoringResult } = this.#extractTelemetryValue(
+        data,
+        details,
+        type,
+      );
       if (value !== null) {
         const datum = {
           id: { namespace: "biosim", key: id },
           timestamp,
           value,
+          monitoringResult,
         };
         callback(datum);
       }
@@ -247,6 +250,26 @@ export default class RealtimeTelemetryProvider {
     const { simID, details, type } = this.#createTelemetryDetails(domainObject);
     const dataToBeReturned = [];
     const simCache = this.#getOrCreateSimCache(simID);
+
+    // If the simulation cache is empty, fetch simulation data using an HTTP GET request
+    if (simCache.size === 0) {
+      const url = `${this.baseURL}/api/simulation/${simID}`;
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          const timestamp = endTelemetry;
+          simCache.set(timestamp, data);
+        } else {
+          console.error(
+            `🛑 HTTP GET request failed with status: ${response.status}`,
+          );
+        }
+      } catch (error) {
+        console.error("Error during HTTP GET request:", error);
+      }
+    }
+
     // Get all timestamps in the cache for this simulation ID
     const timestamps = Array.from(simCache.keys())
       .filter(
@@ -257,11 +280,14 @@ export default class RealtimeTelemetryProvider {
     for (const timestamp of timestamps) {
       const data = simCache.get(timestamp);
       if (data) {
-        const value = this.#extractTelemetryValue(data, details, type);
+        const { value, monitoringResult, rangeResult } =
+          this.#extractTelemetryValue(data, details, type);
         if (value !== null) {
           const datum = {
             id: domainObject.identifier,
             value,
+            monitoringResult,
+            rangeResult,
             timestamp,
           };
           dataToBeReturned.push(datum);
@@ -297,12 +323,17 @@ export default class RealtimeTelemetryProvider {
       const latestTimestamp = timestamps[0];
       const latestData = simCache.get(latestTimestamp);
       if (latestData) {
-        const value = this.#extractTelemetryValue(latestData, details, type);
+        const { value, monitoringResult } = this.#extractTelemetryValue(
+          latestData,
+          details,
+          type,
+        );
         if (value !== null) {
           const datum = {
             id: { namespace: "biosim", key: subscriberID },
             timestamp: latestTimestamp,
             value,
+            monitoringResult,
           };
           callback(datum);
         }
@@ -321,7 +352,9 @@ export default class RealtimeTelemetryProvider {
   }
 
   subscribeToLimits(domainObject, callback) {
-    // does nothing
+    callback(domainObject.limits);
+    // returns a function that does nothing
+    return () => {};
   }
 
   subscribe(domainObject, callback) {

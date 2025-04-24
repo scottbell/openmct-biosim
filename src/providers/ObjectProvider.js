@@ -126,14 +126,14 @@ export default class BioSimObjectProvider {
         simID: newGlobalsObject.simID,
         field,
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(telemetryKey),
+        telemetry: this.#getInitializedTelemetry(),
       };
       newGlobalsObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
     });
   }
 
-  #getInitializedTelemetry(name) {
+  #getInitializedTelemetry() {
     return {
       values: [
         {
@@ -146,7 +146,7 @@ export default class BioSimObjectProvider {
           },
         },
         {
-          key: name,
+          key: "value",
           name: "Value",
           format: "float",
           source: "value",
@@ -255,7 +255,7 @@ export default class BioSimObjectProvider {
         ),
         simID: environmentObject.simID,
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(telemetryKey),
+        telemetry: this.#getInitializedTelemetry(),
       };
       environmentObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
@@ -263,9 +263,52 @@ export default class BioSimObjectProvider {
     return environmentObject;
   }
 
-  // Skeleton function for building sensor modules.
+  // ... existing code ...
+
+  // New helper to convert alarmThresholds into limits
+  #convertAlarmThresholdsToLimits(alarmThresholds, range, valueKey) {
+    const limitConfig = {
+      WATCH: "cyan",
+      WARNING: "yellow",
+      DISTRESS: "orange",
+      CRITICAL: "red",
+      SEVERE: "purple",
+    };
+
+    const limits = {};
+    // Get alarm levels sorted by their threshold value (ascending)
+    const levels = Object.keys(alarmThresholds).sort(
+      (a, b) => alarmThresholds[a] - alarmThresholds[b],
+    );
+    let lowerBound = range.min;
+    levels.forEach((level) => {
+      limits[level] = {
+        low: {
+          color: `${limitConfig[level]}`,
+        },
+        high: {
+          color: `${limitConfig[level]}`,
+        },
+      };
+      limits[level].low[valueKey] = lowerBound;
+      limits[level].high[valueKey] = alarmThresholds[level];
+      lowerBound = alarmThresholds[level];
+    });
+    return limits;
+  }
+
+  // Modify sensor creation to use alarmThresholds if available
   #buildSensor(parent, moduleDetails) {
     const moduleKey = encodeKey(parent, moduleDetails.moduleName);
+    const properties = moduleDetails.properties;
+    let limits;
+    if (properties.alarmThresholds) {
+      limits = this.#convertAlarmThresholdsToLimits(
+        properties.alarmThresholds,
+        properties.range,
+        "value",
+      );
+    }
     const sensorObject = {
       identifier: {
         key: moduleKey,
@@ -276,8 +319,10 @@ export default class BioSimObjectProvider {
       simID: parent.simID,
       moduleName: moduleDetails.moduleName,
       field: "value",
+      limits,
+      range: properties.range,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
-      telemetry: this.#getInitializedTelemetry(moduleDetails.moduleName),
+      telemetry: this.#getInitializedTelemetry(),
     };
     return sensorObject;
   }
@@ -377,7 +422,7 @@ export default class BioSimObjectProvider {
         type: OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY,
         location: this.#openmct.objects.makeKeyString(shelfObject.identifier),
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(telemetryKey),
+        telemetry: this.#getInitializedTelemetry(),
         moduleName: parent.name,
         shelfIndex: index,
       };
@@ -464,7 +509,7 @@ export default class BioSimObjectProvider {
         moduleName: parent.name,
         field,
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(telemetryKey),
+        telemetry: this.#getInitializedTelemetry(),
       };
       crewMemberObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
@@ -580,7 +625,7 @@ export default class BioSimObjectProvider {
       flowType,
       simID: parent.simID,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
-      telemetry: this.#getInitializedTelemetry(telemetryKey),
+      telemetry: this.#getInitializedTelemetry(),
     };
     parent.composition.push(telemetryObject.identifier);
     this.#addObject(telemetryObject);
@@ -615,7 +660,7 @@ export default class BioSimObjectProvider {
         type: OBJECT_TYPES.STORE_TELEMETRY,
         location: this.#openmct.objects.makeKeyString(storeObject.identifier),
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(telemetryKey),
+        telemetry: this.#getInitializedTelemetry(),
       };
       storeObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);

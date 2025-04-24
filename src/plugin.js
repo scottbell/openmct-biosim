@@ -1,4 +1,5 @@
 import { NAMESPACE_KEY, OBJECT_TYPES, ROOT_KEY } from "./const";
+import LimitProvider from "./providers/LimitProvider";
 import BioSimObjectProvider from "./providers/ObjectProvider";
 import RealtimeTelemetryProvider from "./providers/RealtimeTelemetryProvider";
 
@@ -144,5 +145,9 @@ export default function installBiosimPlugin(options) {
     const realTimeTelemetryProvider = new RealtimeTelemetryProvider(options);
 
     openmct.telemetry.addProvider(realTimeTelemetryProvider);
+
+    openmct.telemetry.addProvider(
+      new LimitProvider(openmct, realTimeTelemetryProvider),
+    );
   };
 }
