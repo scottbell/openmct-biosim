@@ -58,7 +58,7 @@ export default class BioSimObjectProvider {
       simIDs.map(async (simID) => {
         const { simulationInstanceDetails, newSimulationInstanceObject } =
           await this.#buildInstanceObject(simID, this.#rootObject);
-        this.#buildGlobalsObject(simID, newSimulationInstanceObject);
+        this.#buildGlobalsObject(newSimulationInstanceObject);
         const unsortedModuleNames = Object.keys(
           simulationInstanceDetails?.modules || {},
         );
@@ -68,11 +68,7 @@ export default class BioSimObjectProvider {
         // iterate through modules of details adding objects
         sortedModuleNames.forEach((moduleName) => {
           const moduleDetails = simulationInstanceDetails?.modules[moduleName];
-          this.#buildModuleObject(
-            simID,
-            newSimulationInstanceObject,
-            moduleDetails,
-          );
+          this.#buildModuleObject(newSimulationInstanceObject, moduleDetails);
         });
       }),
     );
@@ -93,13 +89,14 @@ export default class BioSimObjectProvider {
     return false;
   }
 
-  #buildGlobalsObject(simID, parent) {
-    const globalsKey = encodeKey(simID, OBJECT_TYPES.GLOBALS, "globals");
+  #buildGlobalsObject(parent) {
+    const globalsKey = encodeKey(parent, "globals");
     const newGlobalsObject = {
       identifier: {
         key: globalsKey,
         namespace: NAMESPACE_KEY,
       },
+      simID: parent.simID,
       composition: [],
       type: OBJECT_TYPES.GLOBALS,
       name: `Globals`,
@@ -115,12 +112,7 @@ export default class BioSimObjectProvider {
       "driverStutterLength",
     ];
     globalFields.forEach((field) => {
-      const name = `${newGlobalsObject.name}.${field}`;
-      const telemetryKey = encodeKey(
-        simID,
-        OBJECT_TYPES.GLOBALS_METADATUM,
-        name,
-      );
+      const telemetryKey = encodeKey(parent, field);
       const telemetryObject = {
         identifier: {
           key: telemetryKey,
@@ -131,8 +123,10 @@ export default class BioSimObjectProvider {
         location: this.#openmct.objects.makeKeyString(
           newGlobalsObject.identifier,
         ),
+        simID: newGlobalsObject.simID,
+        field,
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(name),
+        telemetry: this.#getInitializedTelemetry(telemetryKey),
       };
       newGlobalsObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
@@ -166,7 +160,7 @@ export default class BioSimObjectProvider {
 
   async #buildInstanceObject(simID, parent) {
     const simulationInstanceDetails = await this.#fetchJSON(simID);
-    const instanceKey = encodeKey(simID, OBJECT_TYPES.SIMULATION, "instance");
+    const instanceKey = encodeKey(parent, "instance");
     const newSimulationInstanceObject = {
       identifier: {
         key: instanceKey,
@@ -176,6 +170,8 @@ export default class BioSimObjectProvider {
       name: `Simulation ${simID}`,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       globals: simulationInstanceDetails?.globals,
+      simID,
+      instance: simID,
       composition: [],
     };
     this.#rootObject.composition.push(newSimulationInstanceObject.identifier);
@@ -183,36 +179,32 @@ export default class BioSimObjectProvider {
     return { newSimulationInstanceObject, simulationInstanceDetails };
   }
 
-  #buildModuleObject(simID, parent, moduleDetails) {
+  #buildModuleObject(parent, moduleDetails) {
     // New implementation based on moduleType from simulationInstanceDetails.
     let newModuleObject;
     const moduleType = moduleDetails.moduleType;
     if (moduleType === "SimEnvironment") {
-      newModuleObject = this.#buildEnvironment(simID, parent, moduleDetails);
+      newModuleObject = this.#buildEnvironment(parent, moduleDetails);
     } else if (moduleType.includes("Sensor")) {
-      newModuleObject = this.#buildSensor(simID, parent, moduleDetails);
+      newModuleObject = this.#buildSensor(parent, moduleDetails);
     } else if (moduleType.includes("Actuator")) {
-      newModuleObject = this.#buildActuator(simID, parent, moduleDetails);
+      newModuleObject = this.#buildActuator(parent, moduleDetails);
     } else if (moduleType.toLowerCase().includes("crew")) {
-      newModuleObject = this.#buildCrew(simID, parent, moduleDetails);
+      newModuleObject = this.#buildCrew(parent, moduleDetails);
     } else if (moduleType.toLowerCase().includes("biomassps")) {
-      newModuleObject = this.#buildBiomassPS(simID, parent, moduleDetails);
+      newModuleObject = this.#buildBiomassPS(parent, moduleDetails);
     } else if (moduleDetails.consumers || moduleDetails.producers) {
-      newModuleObject = this.#buildActiveModule(simID, parent, moduleDetails);
+      newModuleObject = this.#buildActiveModule(parent, moduleDetails);
     } else if (moduleType.includes("Store")) {
-      newModuleObject = this.#buildStore(simID, parent, moduleDetails);
+      newModuleObject = this.#buildStore(parent, moduleDetails);
     }
     parent.composition.push(newModuleObject.identifier);
     this.#addObject(newModuleObject);
   }
 
   // Skeleton function for building environment modules.
-  #buildEnvironment(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(
-      simID,
-      OBJECT_TYPES.ENVIRONMENT,
-      moduleDetails.moduleName,
-    );
+  #buildEnvironment(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const environmentObject = {
       identifier: {
         key: moduleKey,
@@ -221,7 +213,7 @@ export default class BioSimObjectProvider {
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.ENVIRONMENT,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
-      // Skeleton: Add additional properties as needed.
+      simID: parent.simID,
       composition: [],
     };
 
@@ -248,24 +240,22 @@ export default class BioSimObjectProvider {
       "nitrogenMoles",
     ];
     telemetryFields.forEach((field) => {
-      const name = `${moduleDetails.moduleName}.${field}`;
-      const telemetryKey = encodeKey(
-        simID,
-        OBJECT_TYPES.ENVIRONMENT_TELEMETRY,
-        name,
-      );
+      const telemetryKey = encodeKey(environmentObject, field);
       const telemetryObject = {
         identifier: {
           key: telemetryKey,
           namespace: NAMESPACE_KEY,
         },
         name: field,
+        field: field,
+        moduleName: moduleDetails.moduleName,
         type: OBJECT_TYPES.ENVIRONMENT_TELEMETRY,
         location: this.#openmct.objects.makeKeyString(
           environmentObject.identifier,
         ),
+        simID: environmentObject.simID,
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(name),
+        telemetry: this.#getInitializedTelemetry(telemetryKey),
       };
       environmentObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
@@ -274,12 +264,8 @@ export default class BioSimObjectProvider {
   }
 
   // Skeleton function for building sensor modules.
-  #buildSensor(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(
-      simID,
-      OBJECT_TYPES.SENSOR,
-      moduleDetails.moduleName,
-    );
+  #buildSensor(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const sensorObject = {
       identifier: {
         key: moduleKey,
@@ -287,6 +273,9 @@ export default class BioSimObjectProvider {
       },
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.SENSOR,
+      simID: parent.simID,
+      moduleName: moduleDetails.moduleName,
+      field: "value",
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       telemetry: this.#getInitializedTelemetry(moduleDetails.moduleName),
     };
@@ -294,43 +283,41 @@ export default class BioSimObjectProvider {
   }
 
   // Skeleton function for building actuator modules.
-  #buildActuator(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(
-      simID,
-      OBJECT_TYPES.ACTUATOR,
-      moduleDetails.moduleName,
-    );
+  #buildActuator(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const actuatorObject = {
       identifier: {
         key: moduleKey,
         namespace: NAMESPACE_KEY,
       },
       name: moduleDetails.moduleName,
+      moduleName: moduleDetails.moduleName,
+      simID: parent.simID,
       type: OBJECT_TYPES.ACTUATOR,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
     };
     return actuatorObject;
   }
 
-  #buildBiomassPS(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(simID, "biomassps", moduleDetails.moduleName);
+  #buildBiomassPS(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const biomassObject = {
       identifier: {
         key: moduleKey,
         namespace: NAMESPACE_KEY,
       },
       name: moduleDetails.moduleName,
+      simID: parent.simID,
       type: OBJECT_TYPES.BIOMASSPS,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
 
     // If there are shelves defined in properties, build a shelf object for each
-    if (moduleDetails.properties && moduleDetails.properties.shelves) {
+    if (moduleDetails?.properties?.shelves) {
       let index = 0;
       moduleDetails.properties.shelves.forEach((shelf) => {
         const shelfObject = this.#buildBiomassPSShelf(
-          simID,
           biomassObject,
           shelf,
           index,
@@ -341,13 +328,11 @@ export default class BioSimObjectProvider {
       });
     }
     this.#buildFlowrateControllable({
-      simID,
       parent: biomassObject,
       flows: moduleDetails.consumers,
       telemetryType: OBJECT_TYPES.CONSUMER_TELEMETRY,
     });
     this.#buildFlowrateControllable({
-      simID,
       parent: biomassObject,
       flows: moduleDetails.producers,
       telemetryType: OBJECT_TYPES.PRODUCER_TELEMETRY,
@@ -355,21 +340,20 @@ export default class BioSimObjectProvider {
     return biomassObject;
   }
 
-  #buildBiomassPSShelf(simID, parent, shelfDetails, index) {
-    const shelfName = `Shelf_${index}_${shelfDetails.plantType}`;
-    const shelfKey = encodeKey(simID, OBJECT_TYPES.BIOMSSPS_SHELF, shelfName);
+  #buildBiomassPSShelf(parent, shelfDetails, index) {
+    const shelfKey = encodeKey(parent, `shelf_${index}`);
     const shelfObject = {
       identifier: {
         key: shelfKey,
         namespace: NAMESPACE_KEY,
       },
-      name: shelfName,
+      name: `Shelf ${index + 1}: ${shelfDetails.plantType}`,
+      simID: parent.simID,
       type: OBJECT_TYPES.BIOMSSPS_SHELF,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
 
-    // Define telemetry fields for the shelf
     const telemetryFields = [
       "cropAreaUsed",
       "cropAreaTotal",
@@ -381,24 +365,20 @@ export default class BioSimObjectProvider {
 
     // Create telemetry objects for each field
     telemetryFields.forEach((field) => {
-      const telemetryName = `${shelfObject.name}.${field}`;
-      const telemetryKey = encodeKey(
-        simID,
-        OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY,
-        telemetryName,
-      );
+      const telemetryKey = encodeKey(shelfObject, field);
       const telemetryObject = {
         identifier: {
           key: telemetryKey,
           namespace: NAMESPACE_KEY,
         },
         name: field,
+        simID: shelfObject.simID,
+        field: field,
         type: OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY,
         location: this.#openmct.objects.makeKeyString(shelfObject.identifier),
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(telemetryName),
+        telemetry: this.#getInitializedTelemetry(telemetryKey),
         moduleName: parent.name,
-        field: field,
         shelfIndex: index,
       };
       shelfObject.composition.push(telemetryObject.identifier);
@@ -408,12 +388,8 @@ export default class BioSimObjectProvider {
     return shelfObject;
   }
 
-  #buildCrew(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(
-      simID,
-      OBJECT_TYPES.CREW,
-      moduleDetails.moduleName,
-    );
+  #buildCrew(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const crewObject = {
       identifier: {
         key: moduleKey,
@@ -421,29 +397,21 @@ export default class BioSimObjectProvider {
       },
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.CREW,
+      simID: parent.simID,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
-    // If crew has crew member details (e.g., in properties.crewPeople), add them as children.
-    if (moduleDetails.properties && moduleDetails.properties.crewPeople) {
-      moduleDetails.properties.crewPeople.forEach((crewMember) => {
-        const crewMemberObject = this.#buildCrewMember(
-          simID,
-          crewObject,
-          crewMember,
-        );
-        crewObject.composition.push(crewMemberObject.identifier);
-        this.#addObject(crewMemberObject);
-      });
-    }
+    moduleDetails?.properties?.crewPeople?.forEach((crewMember) => {
+      const crewMemberObject = this.#buildCrewMember(crewObject, crewMember);
+      crewObject.composition.push(crewMemberObject.identifier);
+      this.#addObject(crewMemberObject);
+    });
     this.#buildFlowrateControllable({
-      simID,
       parent: crewObject,
       flows: moduleDetails.consumers,
       telemetryType: OBJECT_TYPES.CONSUMER_TELEMETRY,
     });
     this.#buildFlowrateControllable({
-      simID,
       parent: crewObject,
       flows: moduleDetails.producers,
       telemetryType: OBJECT_TYPES.PRODUCER_TELEMETRY,
@@ -451,20 +419,17 @@ export default class BioSimObjectProvider {
     return crewObject;
   }
 
-  #buildCrewMember(simID, parent, crewMemberDetails) {
+  #buildCrewMember(parent, crewMemberDetails) {
     // replace spaces in name with underscores
-    const crewMemberName = crewMemberDetails.name.replace(/\s+/g, "_");
-    const memberKey = encodeKey(
-      simID,
-      OBJECT_TYPES.CREW_MEMBER,
-      crewMemberName,
-    );
+    const crewMemberKey = crewMemberDetails.name.replace(/\s+/g, "_");
+    const memberKey = encodeKey(parent, crewMemberKey);
     const crewMemberObject = {
       identifier: {
         key: memberKey,
         namespace: NAMESPACE_KEY,
       },
-      name: crewMemberName,
+      simID: parent.simID,
+      name: crewMemberDetails.name,
       type: OBJECT_TYPES.CREW_MEMBER,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
@@ -483,12 +448,7 @@ export default class BioSimObjectProvider {
       "greyWaterProduced",
     ];
     telemetryFields.forEach((field) => {
-      const name = `${parent.name}.${crewMemberName}.${field}`;
-      const telemetryKey = encodeKey(
-        simID,
-        OBJECT_TYPES.CREW_MEMBER_TELEMETRY,
-        name,
-      );
+      const telemetryKey = encodeKey(crewMemberObject, field);
       const telemetryObject = {
         identifier: {
           key: telemetryKey,
@@ -496,11 +456,15 @@ export default class BioSimObjectProvider {
         },
         name: field,
         type: OBJECT_TYPES.CREW_MEMBER_TELEMETRY,
+        simID: crewMemberObject.simID,
         location: this.#openmct.objects.makeKeyString(
           crewMemberObject.identifier,
         ),
+        crewMemberName: crewMemberObject.name,
+        moduleName: parent.name,
+        field,
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(name),
+        telemetry: this.#getInitializedTelemetry(telemetryKey),
       };
       crewMemberObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
@@ -508,12 +472,8 @@ export default class BioSimObjectProvider {
     return crewMemberObject;
   }
 
-  #buildActiveModule(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(
-      simID,
-      OBJECT_TYPES.ACTIVE_MODULE,
-      moduleDetails.moduleName,
-    );
+  #buildActiveModule(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const activeModuleObject = {
       identifier: {
         key: moduleKey,
@@ -521,17 +481,16 @@ export default class BioSimObjectProvider {
       },
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.ACTIVE_MODULE,
+      simID: parent.simID,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
     this.#buildFlowrateControllable({
-      simID,
       parent: activeModuleObject,
       flows: moduleDetails.consumers,
       telemetryType: OBJECT_TYPES.CONSUMER_TELEMETRY,
     });
     this.#buildFlowrateControllable({
-      simID,
       parent: activeModuleObject,
       flows: moduleDetails.producers,
       telemetryType: OBJECT_TYPES.PRODUCER_TELEMETRY,
@@ -539,7 +498,7 @@ export default class BioSimObjectProvider {
     return activeModuleObject;
   }
 
-  #buildFlowGroup({ simID, parent, flowType, telemetryType }) {
+  #buildFlowGroup({ parent, flowType, telemetryType }) {
     // Determine the group type based on the consumer type.
     const groupType =
       telemetryType === OBJECT_TYPES.CONSUMER_TELEMETRY
@@ -550,11 +509,7 @@ export default class BioSimObjectProvider {
     const groupLabel =
       groupType === OBJECT_TYPES.CONSUMER ? "Consumers" : "Producers";
 
-    const groupKey = encodeKey(
-      simID,
-      groupType,
-      `${parent.name}_${flowType}_${groupLabel.toLowerCase()}`,
-    );
+    const groupKey = encodeKey(parent, `${flowType}_${groupLabel}`);
     const groupObject = {
       identifier: {
         key: groupKey,
@@ -562,6 +517,8 @@ export default class BioSimObjectProvider {
       },
       name: `${flowType} ${groupLabel}`,
       type: groupType,
+      simID: parent.simID,
+      flowType,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
       composition: [],
     };
@@ -570,35 +527,32 @@ export default class BioSimObjectProvider {
     return groupObject;
   }
 
-  #buildFlowrateControllable({ simID, parent, flows, telemetryType }) {
+  #buildFlowrateControllable({ parent, flows, telemetryType }) {
     if (!flows) {
       return;
     }
     flows.forEach((flow) => {
       const flowGroup = this.#buildFlowGroup({
-        simID,
         parent,
         flowType: flow.type,
         telemetryType,
       });
       flow.connections.forEach((connection) => {
-        if (flow.rates && flow.rates.actualFlowRates) {
+        if (flow?.rates?.actualFlowRates) {
           this.#buildFlowrateTelemetry({
-            simID,
             parent: flowGroup,
             moduleName: parent.name,
             connection,
-            flowCategory: "Actual",
+            flowType: "Actual",
             telemetryType,
           });
         }
-        if (flow.rates && flow.rates.desiredFlowRates) {
+        if (flow?.rates?.desiredFlowRates) {
           this.#buildFlowrateTelemetry({
-            simID,
             parent: flowGroup,
             moduleName: parent.name,
             connection,
-            flowCategory: "Desired",
+            flowType: "Desired",
             telemetryType,
           });
         }
@@ -606,18 +560,41 @@ export default class BioSimObjectProvider {
     });
   }
 
-  // Skeleton function for building store modules.
-  #buildStore(simID, parent, moduleDetails) {
-    const moduleKey = encodeKey(
-      simID,
-      OBJECT_TYPES.STORE,
-      moduleDetails.moduleName,
-    );
+  #buildFlowrateTelemetry({
+    parent,
+    connection,
+    moduleName,
+    flowType,
+    telemetryType,
+  }) {
+    const telemetryKey = encodeKey(parent, `${connection}_${flowType}`);
+    const telemetryObject = {
+      identifier: {
+        key: telemetryKey,
+        namespace: NAMESPACE_KEY,
+      },
+      name: `${connection} ${flowType} Flow Rate`,
+      type: telemetryType,
+      moduleName,
+      connection,
+      flowType,
+      simID: parent.simID,
+      location: this.#openmct.objects.makeKeyString(parent.identifier),
+      telemetry: this.#getInitializedTelemetry(telemetryKey),
+    };
+    parent.composition.push(telemetryObject.identifier);
+    this.#addObject(telemetryObject);
+    return telemetryObject;
+  }
+
+  #buildStore(parent, moduleDetails) {
+    const moduleKey = encodeKey(parent, moduleDetails.moduleName);
     const storeObject = {
       identifier: {
         key: moduleKey,
         namespace: NAMESPACE_KEY,
       },
+      simID: parent.simID,
       name: moduleDetails.moduleName,
       type: OBJECT_TYPES.STORE,
       location: this.#openmct.objects.makeKeyString(parent.identifier),
@@ -625,47 +602,24 @@ export default class BioSimObjectProvider {
     };
     const telemetryFields = ["currentLevel", "currentCapacity", "overflow"];
     telemetryFields.forEach((field) => {
-      const name = `${moduleDetails.moduleName}.${field}`;
-      const telemetryKey = encodeKey(simID, OBJECT_TYPES.STORE_TELEMETRY, name);
+      const telemetryKey = encodeKey(storeObject, field);
       const telemetryObject = {
         identifier: {
           key: telemetryKey,
           namespace: NAMESPACE_KEY,
         },
         name: field,
+        field: field,
+        moduleName: moduleDetails.moduleName,
+        simID: storeObject.simID,
         type: OBJECT_TYPES.STORE_TELEMETRY,
         location: this.#openmct.objects.makeKeyString(storeObject.identifier),
         configuration: {},
-        telemetry: this.#getInitializedTelemetry(name),
+        telemetry: this.#getInitializedTelemetry(telemetryKey),
       };
       storeObject.composition.push(telemetryObject.identifier);
       this.#addObject(telemetryObject);
     });
     return storeObject;
-  }
-
-  #buildFlowrateTelemetry({
-    simID,
-    parent,
-    connection,
-    moduleName,
-    flowCategory,
-    telemetryType,
-  }) {
-    const name = `${moduleName}.${connection}.${flowCategory}`;
-    const telemetryKey = encodeKey(simID, telemetryType, name);
-    const telemetryObject = {
-      identifier: {
-        key: telemetryKey,
-        namespace: NAMESPACE_KEY,
-      },
-      name: `${connection} ${flowCategory} Flow Rate`,
-      type: telemetryType,
-      location: this.#openmct.objects.makeKeyString(parent.identifier),
-      telemetry: this.#getInitializedTelemetry(name),
-    };
-    parent.composition.push(telemetryObject.identifier);
-    this.#addObject(telemetryObject);
-    return telemetryObject;
   }
 }

@@ -1,7 +1,6 @@
 import { LRUCache } from "lru-cache";
 
 import { OBJECT_TYPES } from "../const";
-import { decodeKey } from "../utils/keyUtils";
 
 export default class RealtimeTelemetryProvider {
   constructor({
@@ -41,44 +40,29 @@ export default class RealtimeTelemetryProvider {
   #createTelemetryDetails(domainObject) {
     const subscriberID = domainObject.identifier.key;
 
-    const { simID, name, type } = decodeKey(subscriberID);
     const details = {};
+    details.moduleName = domainObject.moduleName;
+    details.simID = domainObject.simID;
+    details.field = domainObject.field;
+    const simID = domainObject.simID;
     if (
-      type === OBJECT_TYPES.PRODUCER_TELEMETRY ||
-      type === OBJECT_TYPES.CONSUMER_TELEMETRY
+      domainObject.type === OBJECT_TYPES.PRODUCER_TELEMETRY ||
+      domainObject.type === OBJECT_TYPES.CONSUMER_TELEMETRY
     ) {
-      const parts = name.split(".");
-      details.moduleName = parts[0];
-      details.connection = parts[1];
-      details.flowType = parts[2];
+      details.moduleName = domainObject.moduleName;
+      details.connection = domainObject.connection;
+      details.flowType = domainObject.flowType;
       // either "producers" or "consumers" depending on the type
       details.flowDirection =
-        type === OBJECT_TYPES.PRODUCER_TELEMETRY ? "producers" : "consumers";
-    } else if (type === OBJECT_TYPES.STORE_TELEMETRY) {
-      const parts = name.split(".");
-      details.moduleName = parts[0];
-      details.field = parts[1];
-    } else if (type === OBJECT_TYPES.SENSOR) {
-      details.moduleName = name;
-    } else if (type === OBJECT_TYPES.ENVIRONMENT_TELEMETRY) {
-      const parts = name.split(".");
-      details.moduleName = parts[0];
-      details.field = parts[1];
-    } else if (type === OBJECT_TYPES.CREW_MEMBER_TELEMETRY) {
-      const parts = name.split(".");
-      details.moduleName = parts[0];
-      // need to replace the underscore with a space
-      details.crewMemberName = parts[1].replace(/_/g, " ");
-      details.field = parts[2];
-    } else if (type === OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY) {
-      details.moduleName = domainObject.moduleName;
-      details.field = domainObject.field;
+        domainObject.type === OBJECT_TYPES.PRODUCER_TELEMETRY
+          ? "producers"
+          : "consumers";
+    } else if (domainObject.type === OBJECT_TYPES.CREW_MEMBER_TELEMETRY) {
+      details.crewMemberName = domainObject.crewMemberName;
+    } else if (domainObject.type === OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY) {
       details.shelfIndex = domainObject.shelfIndex;
-    } else if (type === OBJECT_TYPES.GLOBALS_METADATUM) {
-      const parts = name.split(".");
-      details.field = parts[1];
     }
-    return { simID, details, type, subscriberID };
+    return { simID, details, type: domainObject.type, subscriberID };
   }
 
   /**
@@ -141,11 +125,7 @@ export default class RealtimeTelemetryProvider {
     } else if (type === OBJECT_TYPES.CREW_MEMBER_TELEMETRY) {
       const { moduleName, crewMemberName, field } = details;
       const moduleData = data.modules[moduleName];
-      if (
-        moduleData &&
-        moduleData.properties &&
-        moduleData.properties.crewPeople
-      ) {
+      if (moduleData?.properties?.crewPeople) {
         const specificCrewMember = moduleData.properties.crewPeople.find(
           (crewMember) => crewMember.name === crewMemberName,
         );
@@ -156,16 +136,17 @@ export default class RealtimeTelemetryProvider {
     } else if (type === OBJECT_TYPES.BIOMSSPS_SHELF_TELEMETRY) {
       const { moduleName, field, shelfIndex } = details;
       const moduleData = data.modules[moduleName];
-      if (
-        moduleData &&
-        moduleData.properties &&
-        moduleData.properties.shelves
-      ) {
+      if (moduleData?.properties?.shelves) {
         const specificShelf = moduleData.properties.shelves[shelfIndex];
         if (specificShelf) {
           value = specificShelf[field];
         }
       }
+    } else {
+      console.warn(
+        `⚠️ Unsupported telemetry type: ${type}. Unable to extract value.`,
+      );
+      return null;
     }
 
     return value;
@@ -188,8 +169,7 @@ export default class RealtimeTelemetryProvider {
     Object.values(this.subscriptionsByID).forEach((subscription) => {
       const { id, details, type, callback } = subscription;
       // Check if this subscription belongs to the current simulation
-      const decodedKey = decodeKey(id);
-      if (decodedKey.simID !== simID.toString()) {
+      if (subscription.details.simID !== simID) {
         return;
       }
       const value = this.#extractTelemetryValue(data, details, type);
@@ -237,8 +217,7 @@ export default class RealtimeTelemetryProvider {
       setTimeout(() => {
         if (
           Object.values(this.subscriptionsByID).some((sub) => {
-            const decodedKey = decodeKey(sub.id);
-            return decodedKey.simID === simID.toString();
+            return sub.details.simID === simID;
           })
         ) {
           this.#connectWebSocket(simID);
@@ -356,19 +335,19 @@ export default class RealtimeTelemetryProvider {
     // Return an unsubscribe function
     return () => {
       if (this.subscriptionsByID[subscriberID]) {
-        const { simID } = decodeKey(subscriberID);
+        const simIDToSubscribe =
+          this.subscriptionsByID[subscriberID].details.simID;
         delete this.subscriptionsByID[subscriberID];
         if (this.unsubscribeFromModulesOnStop) {
           // Check if there are any remaining subscriptions for this simulation
           const hasRemainingSubscriptions = Object.values(
             this.subscriptionsByID,
           ).some((sub) => {
-            const decodedKey = decodeKey(sub.id);
-            return decodedKey.simID === simID;
+            return sub.details.simID === simIDToSubscribe;
           });
           // If no remaining subscriptions, close the WebSocket
           if (!hasRemainingSubscriptions) {
-            this.#closeWebSocket(simID);
+            this.#closeWebSocket(simIDToSubscribe);
           }
         }
       }

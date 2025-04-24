@@ -1,22 +1,22 @@
-export function encodeKey(simID, type, name) {
+export function encodeKey(parent, name) {
+  const parentKey = parent?.identifier.key;
   // Check if any parameters are missing and throw an error if so.
-  if (!simID || !type || !name) {
+  if (!parentKey || !name) {
     throw new Error(
-      `🛑 Missing parameters for encoding key for simID: ${simID}, type:${type}, name: ${name}`,
+      `🛑 Missing parameters for encoding key, parent key: ${parentKey}, name: ${name}`,
     );
   }
-  return `${simID}:${type}:${name}`;
+  return `${parentKey}:${name}`;
 }
 
 export function decodeKey(key) {
-  // Split the key into its components
   const parts = key.split(":");
-  if (parts.length !== 3) {
-    throw new Error(`🛑 Invalid key format: ${key}. Expect simID.type.name`);
+  if (parts.length < 2) {
+    throw new Error(
+      `🛑 Invalid key format: ${key}. Expected format with at least one parent and a name (e.g., parent:name)`,
+    );
   }
-  return {
-    simID: parts[0],
-    type: parts[1],
-    name: parts[2],
-  };
+  // The last part is always the name, while the rest form the parent key.
+  const name = parts.pop();
+  return { name };
 }
