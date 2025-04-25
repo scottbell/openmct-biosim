@@ -263,9 +263,6 @@ export default class BioSimObjectProvider {
     return environmentObject;
   }
 
-  // ... existing code ...
-
-  // New helper to convert alarmThresholds into limits
   #convertAlarmThresholdsToLimits(alarmThresholds, range, valueKey) {
     const limitConfig = {
       WATCH: "cyan",
@@ -276,11 +273,8 @@ export default class BioSimObjectProvider {
     };
 
     const limits = {};
-    // Get alarm levels sorted by their threshold value (ascending)
-    const levels = Object.keys(alarmThresholds).sort(
-      (a, b) => alarmThresholds[a] - alarmThresholds[b],
-    );
-    let lowerBound = range.min;
+    const levels = Object.keys(alarmThresholds);
+
     levels.forEach((level) => {
       limits[level] = {
         low: {
@@ -290,10 +284,12 @@ export default class BioSimObjectProvider {
           color: `${limitConfig[level]}`,
         },
       };
-      limits[level].low[valueKey] = lowerBound;
-      limits[level].high[valueKey] = alarmThresholds[level];
-      lowerBound = alarmThresholds[level];
+
+      // Use the min and max values directly from the new format
+      limits[level].low[valueKey] = alarmThresholds[level].min;
+      limits[level].high[valueKey] = alarmThresholds[level].max;
     });
+
     return limits;
   }
 
