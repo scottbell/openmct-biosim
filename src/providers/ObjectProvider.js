@@ -53,6 +53,8 @@ export default class BioSimObjectProvider {
   async #fetchFromBiosim() {
     const biosimStatus = await this.#fetchJSON("");
     const simIDs = biosimStatus?.simulations;
+    // sort simIDs
+    simIDs.sort((a, b) => a - b);
     // for each simID, we need to make requests about the modules and globals.
     await Promise.all(
       simIDs.map(async (simID) => {
@@ -160,7 +162,7 @@ export default class BioSimObjectProvider {
 
   async #buildInstanceObject(simID, parent) {
     const simulationInstanceDetails = await this.#fetchJSON(simID);
-    const instanceKey = encodeKey(parent, "instance");
+    const instanceKey = encodeKey(parent, `instance_${simID}`);
     const newSimulationInstanceObject = {
       identifier: {
         key: instanceKey,
