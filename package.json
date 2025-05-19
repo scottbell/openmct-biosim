@@ -2,7 +2,7 @@
     "name": "openmct-biosim",
     "version": "0.1.0",
     "description": "An Open MCT plugin that connects to BioSim and provides simulation objects.",
-    "main": "dist/index.js",
+    "main": "dist/openmct-biosim.js",
     "scripts": {
         "clean": "rm -rf ./dist ./node_modules",
         "build:dev": "npm install nasa/openmct#master --no-save && webpack",
@@ -17,14 +17,6 @@
     ],
     "author": "Scott Bell",
     "license": "GPVL-3.0",
-    "browserslist": [
-        "Firefox ESR",
-        "not IE 11",
-        "last 2 Chrome versions",
-        "unreleased Chrome versions",
-        "ios_saf >= 16",
-        "Safari >= 16"
-    ],
     "devDependencies": {
         "@babel/core": "^7.26.10",
         "@babel/eslint-parser": "^7.27.0",
