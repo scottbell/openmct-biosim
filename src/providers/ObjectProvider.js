@@ -266,31 +266,40 @@ export default class BioSimObjectProvider {
   }
 
   #convertAlarmThresholdsToLimits(alarmThresholds, range, valueKey) {
-    const limitConfig = {
-      WATCH: "cyan",
-      WARNING: "yellow",
-      DISTRESS: "orange",
-      CRITICAL: "red",
-      SEVERE: "purple",
+    const limitColors = {
+      WATCH_LOW: "cyan",
+      WATCH_HIGH: "cyan",
+      WARNING_LOW: "yellow",
+      WARNING_HIGH: "yellow",
+      DISTRESS_LOW: "orange",
+      DISTRESS_HIGH: "orange",
+      CRITICAL_LOW: "red",
+      CRITICAL_HIGH: "red",
+      SEVERE_LOW: "purple",
+      SEVERE_HIGH: "purple",
     };
 
     const limits = {};
-    const levels = Object.keys(alarmThresholds);
-
-    levels.forEach((level) => {
-      limits[level] = {
-        low: {
-          color: `${limitConfig[level]}`,
-        },
-        high: {
-          color: `${limitConfig[level]}`,
-        },
-      };
-
-      // Use the min and max values directly from the new format
-      limits[level].low[valueKey] = alarmThresholds[level].min;
-      limits[level].high[valueKey] = alarmThresholds[level].max;
-    });
+    // Group thresholds by severity so CSS width classes apply to full lines
+    Object.keys(limitColors)
+      .map((key) => key.split("_")[0])
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .forEach((level) => {
+        const color =
+          limitColors[`${level}_LOW`] || limitColors[`${level}_HIGH`];
+        const lowKey = `${level}_LOW`;
+        const highKey = `${level}_HIGH`;
+        if (alarmThresholds[lowKey]) {
+          limits[level] = limits[level] || {};
+          limits[level].low = { color };
+          limits[level].low[valueKey] = alarmThresholds[lowKey].min;
+        }
+        if (alarmThresholds[highKey]) {
+          limits[level] = limits[level] || {};
+          limits[level].high = { color };
+          limits[level].high[valueKey] = alarmThresholds[highKey].max;
+        }
+      });
 
     return limits;
   }

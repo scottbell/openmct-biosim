@@ -19,7 +19,6 @@ const config = {
   plugins: ["prettier", "unicorn", "simple-import-sort"],
   extends: [
     "eslint:recommended",
-    "plugin:compat/recommended",
     "plugin:vue/vue3-recommended",
     "plugin:you-dont-need-lodash-underscore/compatible",
     "plugin:prettier/recommended",

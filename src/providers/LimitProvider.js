@@ -1,9 +1,14 @@
 const MONITORING_RESULT_CSS = {
-  WATCH: "is-limit--yellow",
-  WARNING: "is-limit--yellow",
-  DISTRESS: "is-limit--red",
-  CRITICAL: "is-limit--red",
-  SEVERE: "is-limit--red",
+  WATCH_LOW: "is-limit--yellow",
+  WATCH_HIGH: "is-limit--yellow",
+  WARNING_LOW: "is-limit--yellow",
+  WARNING_HIGH: "is-limit--yellow",
+  DISTRESS_LOW: "is-limit--red",
+  DISTRESS_HIGH: "is-limit--red",
+  CRITICAL_LOW: "is-limit--red",
+  CRITICAL_HIGH: "is-limit--red",
+  SEVERE_LOW: "is-limit--red",
+  SEVERE_HIGH: "is-limit--red",
 };
 
 export default class LimitProvider {
